@@ -132,3 +132,4 @@ The entire lifecycle of a document in the Insurance Document Intelligence Lab wa
 ## 3. Failure Recovery & Worker Restart Resilience
 - **Worker Durability:** Background queue tasks persist to `ProcessingJob` database records.
 - **Restart Recovery:** If the backend process terminates during job execution, pending jobs remain marked in SQLite and are resumed upon restart without data corruption.
+

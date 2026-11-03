@@ -4,7 +4,7 @@ $tempDir = "D:\edge_temp"
 New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
-$docId = "8d0ae591-ae4b-4712-a10f-b6e2e9df4b4b"
+$docId = "283dc417-8a80-4417-b424-21bb8b8b1eac"
 
 $pages = @(
     @{ Name = "01_overview.png"; Url = "http://localhost:3000/" },
@@ -44,3 +44,4 @@ foreach ($p in $pages) {
 
 Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 Write-Host "`nAll screenshots captured successfully in $outDir"
+

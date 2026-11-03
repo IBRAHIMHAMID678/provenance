@@ -16,3 +16,9 @@ build/
 *.tmp
 temp/
 edge_temp/
+
+# Data & SQLite artifacts
+backend/data/uploads/
+backend/data/processed/
+*.db-shm
+*.db-wal

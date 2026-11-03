@@ -72,3 +72,4 @@ DOCUMENT TYPE                 INSPECTION QUALITY    NATIVE EXTRACTED    PADDLEOC
 2. **Pure Scanned PDF:** Native extraction yielded 0 fields (no text layer). Hybrid router detected `SCANNED` quality, dynamically routed to PaddleOCR, and successfully extracted 10/11 fields with 10 evidence bounding boxes.
 3. **Low-Quality Scan (Degraded 75 DPI):** Heavy noise and character blur prevented reliable character recognition. Completeness was correctly flagged as 0.0%, and the system escalated the document rather than hallucinating uncertain values.
 4. **Mixed & Multi-Page:** Hybrid router processed multi-page documents seamlessly, preserving page-level evidence across all 3 pages.
+
