@@ -11,7 +11,11 @@ import {
   FileText, 
   Clock, 
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  ExternalLink,
+  Target,
+  ArrowRight,
+  ShieldAlert
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -22,6 +26,7 @@ export default function HumanReviewPage() {
   const [correctionValue, setCorrectionValue] = useState('');
   const [correctionNotes, setCorrectionNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const loadQueue = async () => {
     try {
@@ -44,6 +49,15 @@ export default function HumanReviewPage() {
   useEffect(() => {
     loadQueue();
   }, []);
+
+  // Timer simulating operator review time tracking for loaded cost accounting
+  useEffect(() => {
+    setElapsedSeconds(0);
+    const interval = setInterval(() => {
+      setElapsedSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [selectedTask?.task_id]);
 
   const handleSelectTask = (task: any) => {
     setSelectedTask(task);
@@ -80,161 +94,200 @@ export default function HumanReviewPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-graphite">Human Review Workspace</h1>
-          <p className="text-sm text-mutedText mt-0.5">
-            Adjudicate low-confidence fields, cross-field validation flags, and missing required identifiers.
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-mono tracking-widest uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              Human-In-The-Loop Adjudication
+            </span>
+            <span className="text-textMuted text-xs">·</span>
+            <span className="text-xs text-textSecondary font-mono">
+              Audit Rate: $35.00/hr loaded
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+            Human Review Station
+          </h1>
+          <p className="text-xs text-textSecondary mt-1 max-w-2xl">
+            Adjudicate uncertain fields, low OCR confidence tokens, and cross-field validation flags with immutable audit trail preservation.
           </p>
         </div>
+
         <div className="flex items-center gap-3">
-          <span className="text-xs text-mutedText font-mono">
-            {tasks.length} pending items
-          </span>
+          <div className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-xs font-mono text-cyan-300 flex items-center gap-2">
+            <Clock className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Active Timer: {elapsedSeconds}s</span>
+          </div>
           <button
             onClick={loadQueue}
-            className="p-1.5 rounded-md border border-borderLight bg-surface text-mutedText hover:text-graphite text-xs font-medium"
+            className="p-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-textSecondary hover:text-white hover:bg-white/[0.08] transition-colors"
+            title="Refresh Queue"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
       {tasks.length === 0 ? (
-        <div className="p-12 text-center bg-surface border border-borderLight rounded-lg">
-          <Check className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-          <h2 className="text-sm font-semibold text-graphite">Review Queue Clear</h2>
-          <p className="text-xs text-mutedText mt-1 max-w-sm mx-auto">
-            Zero fields currently require human operator intervention. All documents either passed confidence thresholds or are pending extraction.
+        <div className="p-16 text-center glass-panel border border-white/[0.08] rounded-2xl relative overflow-hidden">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4 shadow-glow-emerald">
+            <Check className="w-6 h-6 text-emerald-400" />
+          </div>
+          <h2 className="text-base font-bold text-white font-mono">Review Station Queue Clear</h2>
+          <p className="text-xs text-textMuted mt-1 max-w-md mx-auto">
+            Zero fields currently require human operator intervention. All documents either passed confidence thresholds (≥0.90) or have been verified.
           </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <Link
+              href="/"
+              className="px-4 py-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-xs font-medium text-white transition-colors"
+            >
+              Back to Overview
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-12 gap-6 items-start">
-          {/* Task List (5 cols) */}
-          <div className="col-span-5 space-y-2.5 max-h-[700px] overflow-y-auto pr-1">
+          {/* Task Queue Column (5 cols) */}
+          <div className="col-span-12 lg:col-span-5 space-y-2.5 max-h-[720px] overflow-y-auto pr-1">
+            <div className="flex items-center justify-between text-xs text-textMuted px-1 font-mono mb-1">
+              <span>PENDING ESCALATIONS</span>
+              <span className="text-amber-300 font-semibold">{tasks.length} items</span>
+            </div>
+
             {tasks.map((t) => {
               const isSelected = selectedTask?.task_id === t.task_id;
               return (
                 <div
                   key={t.task_id}
                   onClick={() => handleSelectTask(t)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                     isSelected
-                      ? 'border-charcoal bg-surface shadow-sm'
-                      : 'border-borderLight bg-surface hover:border-neutral-400'
+                      ? 'border-cyan-400 bg-cyan-950/30 shadow-glow-cyan'
+                      : 'border-white/[0.07] glass-card hover:border-white/[0.15]'
                   }`}
                 >
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="font-mono text-mutedText font-semibold text-[11px]">
-                      {t.field_name}
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <span className="font-mono text-cyan-300 font-semibold text-[11px] flex items-center gap-1.5">
+                      <Target className="w-3 h-3 text-cyan-400" />
+                      <span>{t.field_name}</span>
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">
-                      {t.priority} priority
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                      {t.priority}
                     </span>
                   </div>
-                  <div className="text-xs font-semibold text-graphite truncate">
-                    {t.extracted_value ? t.extracted_value : <span className="text-neutral-400 italic">[Missing]</span>}
+                  <div className="text-sm font-bold text-white font-mono truncate">
+                    {t.extracted_value ? t.extracted_value : <span className="text-textMuted italic font-normal">[Missing]</span>}
                   </div>
-                  <div className="text-[11px] text-mutedText mt-1 flex items-center justify-between">
-                    <span className="truncate max-w-[200px]">{t.document_filename}</span>
-                    <span className="font-mono text-amber-600">{Math.round(t.confidence_score * 100)}% conf</span>
+                  <div className="text-[11px] text-textMuted mt-1.5 flex items-center justify-between font-mono">
+                    <span className="truncate max-w-[210px] text-slate-400">{t.document_filename}</span>
+                    <span className="text-amber-400 font-medium">{Math.round(t.confidence_score * 100)}% conf</span>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Adjudication Workspace (7 cols) */}
+          {/* Adjudication Workbench Column (7 cols) */}
           {selectedTask && (
-            <div className="col-span-7 p-6 rounded-lg bg-surface border border-borderLight space-y-5">
-              <div className="flex items-center justify-between border-b border-borderLight pb-3">
+            <div className="col-span-12 lg:col-span-7 p-6 rounded-2xl glass-panel border border-white/[0.08] space-y-6 shadow-float">
+              <div className="flex items-center justify-between border-b border-white/[0.07] pb-4">
                 <div>
-                  <span className="text-xs font-mono text-mutedText uppercase">Field In Review</span>
-                  <h2 className="text-base font-bold text-graphite">{selectedTask.field_name}</h2>
+                  <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-wider font-semibold">Active Review Target</span>
+                  <h2 className="text-lg font-bold text-white font-mono">{selectedTask.field_name}</h2>
                 </div>
                 <Link
                   href={`/documents/${selectedTask.document_id}`}
-                  className="text-xs text-graphite hover:underline font-medium"
+                  className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-cyan-500/20 text-xs text-cyan-300 border border-cyan-500/30 font-medium flex items-center gap-1.5 transition-colors"
                 >
-                  View Full PDF →
+                  <span>Inspect Full Document Stage</span>
+                  <ExternalLink className="w-3 h-3" />
                 </Link>
               </div>
 
-              {/* Flag Reason Alert */}
-              <div className="p-3 rounded-md bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              {/* Escalation Reason Banner */}
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold">Review Escalation Reason:</span> {selectedTask.reason}
+                  <span className="font-semibold text-amber-300 font-mono">Escalation Trigger:</span> {selectedTask.reason}
                 </div>
               </div>
 
-              {/* Source Document Evidence Snippet */}
+              {/* Source Document Context Evidence */}
               <div>
-                <label className="text-xs font-medium text-mutedText block mb-1">Source Document Evidence</label>
-                <div className="p-3 rounded-md bg-stone-50 border border-borderLight text-xs font-mono text-graphite">
+                <label className="text-xs font-mono text-textSecondary uppercase tracking-wider block mb-1.5">
+                  Spatial Document Evidence Snippet
+                </label>
+                <div className="p-3.5 rounded-xl bg-[#07090E] border border-white/[0.08] text-xs font-mono text-cyan-300 leading-relaxed shadow-inner">
                   {selectedTask.evidence_text ? (
                     <span>&ldquo;{selectedTask.evidence_text}&rdquo;</span>
                   ) : (
-                    <span className="text-neutral-400 italic">No localized evidence bounding box captured.</span>
+                    <span className="text-textMuted italic font-normal">No bounding box evidence captured by primary engine.</span>
                   )}
                 </div>
-                <div className="text-[11px] text-mutedText mt-1">
-                  Document: {selectedTask.document_filename} (Page {selectedTask.page_number})
+                <div className="text-[11px] text-textMuted mt-1.5 font-mono flex items-center justify-between">
+                  <span>Target: <span className="text-slate-300">{selectedTask.document_filename}</span></span>
+                  <span className="text-cyan-400">Page {selectedTask.page_number}</span>
                 </div>
               </div>
 
-              {/* Current Machine Value */}
+              {/* Current Machine Extraction */}
               <div>
-                <label className="text-xs font-medium text-mutedText block mb-1">Machine Extracted Value</label>
-                <div className="text-sm font-semibold text-graphite p-2.5 rounded bg-surfaceSecondary border border-borderLight font-mono">
-                  {selectedTask.extracted_value || '[Null / Missing]'}
+                <label className="text-xs font-mono text-textSecondary uppercase tracking-wider block mb-1.5">
+                  Machine Extracted Candidate
+                </label>
+                <div className="text-sm font-bold text-white p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] font-mono">
+                  {selectedTask.extracted_value || <span className="text-textMuted italic font-normal">[Missing]</span>}
                 </div>
               </div>
 
-              {/* Correction Form */}
-              <form onSubmit={handleCorrect} className="space-y-4 pt-2 border-t border-borderLight">
+              {/* Form Actions */}
+              <form onSubmit={handleCorrect} className="space-y-4 pt-3 border-t border-white/[0.07]">
                 <div>
-                  <label className="text-xs font-medium text-graphite block mb-1">
-                    Corrected Value <span className="text-red-500">*</span>
+                  <label className="text-xs font-medium text-white block mb-1.5">
+                    Verified Correct Value <span className="text-cyan-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={correctionValue}
                     onChange={(e) => setCorrectionValue(e.target.value)}
                     required
-                    placeholder="Enter verified correct value..."
-                    className="w-full p-2 rounded-md border border-borderLight text-xs text-graphite focus:outline-none focus:ring-1 focus:ring-charcoal"
+                    placeholder="Input human-audited correct value..."
+                    className="w-full p-3 rounded-xl bg-[#07090E] border border-white/[0.12] text-xs font-mono text-white placeholder-textMuted focus:outline-none focus:border-cyan-400 focus:shadow-glow-cyan transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-mutedText block mb-1">Auditor Rationale / Notes</label>
+                  <label className="text-xs font-medium text-textSecondary block mb-1.5 font-mono">
+                    Audit Rationale / Document Provenance Notes
+                  </label>
                   <input
                     type="text"
                     value={correctionNotes}
                     onChange={(e) => setCorrectionNotes(e.target.value)}
-                    placeholder="e.g. Corrected date from handwritten section"
-                    className="w-full p-2 rounded-md border border-borderLight text-xs text-graphite focus:outline-none"
+                    placeholder="e.g. Verified against physical policy schedule endorsement on page 2"
+                    className="w-full p-3 rounded-xl bg-[#07090E] border border-white/[0.08] text-xs text-white placeholder-textMuted focus:outline-none focus:border-white/[0.2] transition-colors"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="flex items-center justify-end gap-3 pt-3">
                   <button
                     type="button"
                     onClick={handleAccept}
                     disabled={submitting || !selectedTask.extracted_value}
-                    className="px-4 py-2 rounded-md border border-borderLight bg-surface hover:bg-surfaceSecondary text-xs font-medium text-graphite flex items-center gap-1.5 transition-colors disabled:opacity-40"
+                    className="px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-300 flex items-center gap-2 transition-all disabled:opacity-40"
                   >
-                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Confirm Machine Value</span>
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span>Confirm Machine Extraction</span>
                   </button>
                   <button
                     type="submit"
                     disabled={submitting || !correctionValue}
-                    className="px-4 py-2 rounded-md bg-charcoal text-white hover:bg-neutral-800 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-40"
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-xs font-semibold text-white flex items-center gap-2 transition-all shadow-glow-cyan disabled:opacity-40"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Save Human Correction</span>
+                    <Edit3 className="w-4 h-4 text-white" />
+                    <span>Commit Human Correction</span>
                   </button>
                 </div>
               </form>
@@ -245,4 +298,3 @@ export default function HumanReviewPage() {
     </div>
   );
 }
-

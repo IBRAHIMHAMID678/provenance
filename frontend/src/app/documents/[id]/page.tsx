@@ -17,7 +17,10 @@ import {
   ZoomOut,
   Layers,
   ShieldAlert,
-  UserCheck
+  UserCheck,
+  Cpu,
+  Target,
+  Sparkles
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -32,6 +35,7 @@ export default function DocumentDetailPage() {
   const [activeTab, setActiveTab] = useState<'fields' | 'validations' | 'json'>('fields');
   const [highlightedField, setHighlightedField] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
+  const [reextracting, setReextracting] = useState(false);
 
   const fetchDetail = async () => {
     try {
@@ -52,18 +56,31 @@ export default function DocumentDetailPage() {
     if (docId) fetchDetail();
   }, [docId]);
 
+  const handleRerunExtraction = async (method = 'hybrid') => {
+    try {
+      setReextracting(true);
+      await api.runExtraction(docId, method);
+      await fetchDetail();
+    } catch (err: any) {
+      alert(`Extraction failed: ${err.message}`);
+    } finally {
+      setReextracting(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="py-24 text-center text-mutedText text-xs">
-        Loading document inspection and evidence...
+      <div className="py-24 text-center text-textMuted text-xs flex flex-col items-center justify-center gap-3">
+        <div className="w-8 h-8 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin"></div>
+        <p className="font-mono">Loading spatial document stage & evidence telemetry...</p>
       </div>
     );
   }
 
   if (!doc) {
     return (
-      <div className="py-24 text-center text-mutedText text-xs">
-        Document not found. <Link href="/documents" className="text-graphite underline">Back to library</Link>
+      <div className="py-24 text-center text-textMuted text-xs">
+        Document not found. <Link href="/documents" className="text-cyan-400 underline">Back to Ingestion Library</Link>
       </div>
     );
   }
@@ -80,55 +97,66 @@ export default function DocumentDetailPage() {
     }));
 
   return (
-    <div className="space-y-4">
-      {/* Top Header Breadcrumb */}
-      <div className="flex items-center justify-between border-b border-borderLight pb-4">
+    <div className="space-y-6">
+      {/* Top Header Breadcrumb & Actions */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
         <div className="flex items-center gap-3">
           <Link
             href="/documents"
-            className="p-1.5 rounded-md border border-borderLight hover:bg-surfaceSecondary text-mutedText hover:text-graphite transition-colors"
+            className="p-2 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-textSecondary hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold text-graphite tracking-tight">{doc.original_filename}</h1>
-              <span className="px-2 py-0.5 rounded bg-surfaceSecondary text-[11px] font-mono border border-borderLight">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-lg font-bold text-white tracking-tight font-mono">{doc.original_filename}</h1>
+              <span className="px-2 py-0.5 rounded-md bg-white/[0.05] text-[11px] font-mono text-cyan-300 border border-white/[0.08]">
                 {doc.document_type}
               </span>
-              <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-medium ${
                 doc.status === 'completed'
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
                   : doc.status === 'review_required'
-                  ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                  : 'bg-stone-100 text-stone-700 border border-stone-200'
+                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                  : 'bg-red-500/15 text-red-300 border border-red-500/30'
               }`}>
                 {doc.status}
               </span>
             </div>
-            <p className="text-xs text-mutedText mt-0.5">
-              Checksum: <span className="font-mono">{doc.checksum?.substring(0, 16)}...</span> · {doc.page_count} pages · {doc.quality_category}
+            <p className="text-xs text-textMuted mt-1 font-mono">
+              SHA: <span className="text-slate-300">{doc.checksum?.substring(0, 16)}...</span> · {doc.page_count} page(s) · Grade: <span className="text-cyan-400">{doc.quality_category}</span>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Action Controls */}
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => handleRerunExtraction('hybrid')}
+            disabled={reextracting}
+            className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-cyan-500/20 text-xs font-medium text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+          >
+            <Play className={`w-3.5 h-3.5 ${reextracting ? 'animate-spin' : ''}`} />
+            <span>{reextracting ? 'Extracting...' : 'Re-run Hybrid Router'}</span>
+          </button>
+          
           <a
             href={`http://localhost:8000/api/export/document/${doc.id}/json`}
             target="_blank"
             rel="noreferrer"
-            className="px-3 py-1.5 rounded border border-borderLight bg-surface hover:bg-surfaceSecondary text-xs font-medium text-graphite flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-textSecondary hover:text-white flex items-center gap-1.5 transition-colors"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3.5 h-3.5 text-cyan-400" />
             <span>Export JSON</span>
           </a>
+
           <a
             href={`http://localhost:8000/api/export/document/${doc.id}/csv`}
             target="_blank"
             rel="noreferrer"
-            className="px-3 py-1.5 rounded border border-borderLight bg-surface hover:bg-surfaceSecondary text-xs font-medium text-graphite flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-textSecondary hover:text-white flex items-center gap-1.5 transition-colors"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3.5 h-3.5 text-emerald-400" />
             <span>Export CSV</span>
           </a>
         </div>
@@ -136,25 +164,25 @@ export default function DocumentDetailPage() {
 
       {/* Split Pane: Left Viewer, Right Extractions */}
       <div className="grid grid-cols-12 gap-6 items-start">
-        {/* Left Pane: PDF Canvas & Bounding Box Overlays (7 cols) */}
-        <div className="col-span-7 space-y-3">
-          {/* Viewer Controls */}
-          <div className="p-2.5 rounded-lg bg-surface border border-borderLight flex items-center justify-between text-xs">
+        {/* Left Pane: Spatial Document Stage with SVG Evidence Reticle (7 cols) */}
+        <div className="col-span-12 lg:col-span-7 space-y-3">
+          {/* Viewer HUD Bar */}
+          <div className="p-3 rounded-xl glass-panel border border-white/[0.08] flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSelectedPage(Math.max(1, selectedPage - 1))}
                 disabled={selectedPage <= 1}
-                className="p-1 rounded border border-borderLight hover:bg-surfaceSecondary disabled:opacity-30"
+                className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/[0.08] text-slate-300 disabled:opacity-30 transition-colors"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
-              <span className="font-mono text-mutedText">
-                Page {selectedPage} of {doc.page_count}
+              <span className="font-mono text-textSecondary text-[11px]">
+                Page <span className="text-white font-semibold">{selectedPage}</span> of {doc.page_count}
               </span>
               <button
                 onClick={() => setSelectedPage(Math.min(doc.page_count, selectedPage + 1))}
                 disabled={selectedPage >= doc.page_count}
-                className="p-1 rounded border border-borderLight hover:bg-surfaceSecondary disabled:opacity-30"
+                className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/[0.08] text-slate-300 disabled:opacity-30 transition-colors"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
@@ -163,25 +191,27 @@ export default function DocumentDetailPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setZoomLevel(Math.max(0.7, zoomLevel - 0.15))}
-                className="p-1 rounded border border-borderLight hover:bg-surfaceSecondary text-mutedText hover:text-graphite"
+                className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/[0.08] text-textSecondary hover:text-white transition-colors"
+                title="Zoom Out"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </button>
-              <span className="font-mono text-[11px] text-mutedText">{Math.round(zoomLevel * 100)}%</span>
+              <span className="font-mono text-[11px] text-cyan-300 w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
               <button
                 onClick={() => setZoomLevel(Math.min(1.6, zoomLevel + 0.15))}
-                className="p-1 rounded border border-borderLight hover:bg-surfaceSecondary text-mutedText hover:text-graphite"
+                className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/[0.08] text-textSecondary hover:text-white transition-colors"
+                title="Zoom In"
               >
                 <ZoomIn className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Canvas Container with SVG Bounding Box Layer */}
-          <div className="rounded-lg bg-stone-100 border border-borderLight overflow-auto max-h-[750px] p-4 flex justify-center">
+          {/* Spatial Canvas Container with SVG Bounding Box Layer */}
+          <div className="rounded-xl glass-panel border border-white/[0.08] overflow-auto max-h-[750px] p-6 flex justify-center bg-[#07090E]/90 relative shadow-inner">
             {activePageObj ? (
               <div 
-                className="relative bg-white shadow-md border border-neutral-300"
+                className="relative bg-white shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-neutral-700 rounded-sm overflow-hidden"
                 style={{
                   width: `${activePageObj.width * zoomLevel}px`,
                   height: `${activePageObj.height * zoomLevel}px`,
@@ -213,11 +243,11 @@ export default function DocumentDetailPage() {
                           y={y0}
                           width={w}
                           height={h}
-                          fill={isHigh ? 'rgba(217, 119, 6, 0.25)' : 'rgba(45, 106, 79, 0.15)'}
-                          stroke={isHigh ? '#D97706' : '#2D6A4F'}
+                          fill={isHigh ? 'rgba(0, 242, 254, 0.28)' : 'rgba(16, 185, 129, 0.16)'}
+                          stroke={isHigh ? '#00F2FE' : '#10B981'}
                           strokeWidth={isHigh ? 3 : 1.5}
                           strokeDasharray={isHigh ? 'none' : '4 2'}
-                          className="cursor-pointer transition-all hover:fill-amber-200/40"
+                          className="cursor-pointer transition-all hover:fill-cyan-400/40"
                           onClick={() => setHighlightedField(ev.fieldName)}
                         />
                       </g>
@@ -226,53 +256,53 @@ export default function DocumentDetailPage() {
                 </svg>
               </div>
             ) : (
-              <div className="py-24 text-mutedText text-xs">Page preview not available.</div>
+              <div className="py-24 text-textMuted text-xs font-mono">Page preview not available.</div>
             )}
           </div>
         </div>
 
-        {/* Right Pane: Fields, Validations & Evidence (5 cols) */}
-        <div className="col-span-5 space-y-4">
+        {/* Right Pane: Fields, Validations & Trace (5 cols) */}
+        <div className="col-span-12 lg:col-span-5 space-y-4">
           {/* Tab Selector */}
-          <div className="flex border-b border-borderLight">
+          <div className="flex border-b border-white/[0.08] gap-1">
             <button
               onClick={() => setActiveTab('fields')}
-              className={`py-2 px-4 text-xs font-medium border-b-2 transition-colors ${
+              className={`py-2 px-3 text-xs font-medium border-b-2 transition-all ${
                 activeTab === 'fields'
-                  ? 'border-charcoal text-graphite'
-                  : 'border-transparent text-mutedText hover:text-graphite'
+                  ? 'border-cyan-400 text-cyan-300 font-semibold'
+                  : 'border-transparent text-textSecondary hover:text-white'
               }`}
             >
               Extracted Fields ({doc.fields?.length || 0})
             </button>
             <button
               onClick={() => setActiveTab('validations')}
-              className={`py-2 px-4 text-xs font-medium border-b-2 transition-colors ${
+              className={`py-2 px-3 text-xs font-medium border-b-2 transition-all ${
                 activeTab === 'validations'
-                  ? 'border-charcoal text-graphite'
-                  : 'border-transparent text-mutedText hover:text-graphite'
+                  ? 'border-cyan-400 text-cyan-300 font-semibold'
+                  : 'border-transparent text-textSecondary hover:text-white'
               }`}
             >
               Validations ({doc.validations?.length || 0})
             </button>
             <button
               onClick={() => setActiveTab('json')}
-              className={`py-2 px-4 text-xs font-medium border-b-2 transition-colors ${
+              className={`py-2 px-3 text-xs font-medium border-b-2 transition-all ${
                 activeTab === 'json'
-                  ? 'border-charcoal text-graphite'
-                  : 'border-transparent text-mutedText hover:text-graphite'
+                  ? 'border-cyan-400 text-cyan-300 font-semibold'
+                  : 'border-transparent text-textSecondary hover:text-white'
               }`}
             >
-              Trace & JSON
+              Trace JSON
             </button>
           </div>
 
           {/* TAB 1: Fields Card List */}
           {activeTab === 'fields' && (
-            <div className="space-y-3 overflow-y-auto max-h-[720px] pr-1">
+            <div className="space-y-2.5 overflow-y-auto max-h-[720px] pr-1">
               {(!doc.fields || doc.fields.length === 0) ? (
-                <div className="p-8 text-center text-xs text-mutedText bg-surface border border-borderLight rounded-lg">
-                  No fields extracted yet. Click &quot;Rerun Extraction&quot; to execute the pipeline.
+                <div className="p-8 text-center text-xs text-textMuted glass-card rounded-xl border border-white/[0.08]">
+                  No fields extracted yet. Click &quot;Re-run Hybrid Router&quot; to execute.
                 </div>
               ) : (
                 doc.fields.map((f: any) => {
@@ -284,51 +314,52 @@ export default function DocumentDetailPage() {
                         setHighlightedField(f.field_name);
                         if (f.evidence?.page_number) setSelectedPage(f.evidence.page_number);
                       }}
-                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                      className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
                         isHighlighted
-                          ? 'border-amber-500 bg-amber-50/20 shadow-sm'
-                          : 'border-borderLight bg-surface hover:border-neutral-400'
+                          ? 'border-cyan-400 bg-cyan-950/30 shadow-glow-cyan'
+                          : 'border-white/[0.08] glass-card hover:border-white/[0.18]'
                       }`}
                     >
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="font-mono text-mutedText font-medium text-[11px]">
-                          {f.field_name}
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="font-mono text-cyan-300 font-medium text-[11px] flex items-center gap-1.5">
+                          <Target className="w-3 h-3 text-cyan-400" />
+                          <span>{f.field_name}</span>
                         </span>
                         <div className="flex items-center gap-1.5">
                           {f.is_critical && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-100 text-red-800 font-medium">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-mono border border-red-500/30">
                               Critical
                             </span>
                           )}
                           <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
                             f.confidence_score >= 0.90
-                              ? 'bg-emerald-100 text-emerald-800'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                               : f.confidence_score > 0
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-stone-200 text-stone-700'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : 'bg-white/[0.08] text-slate-400'
                           }`}>
                             {Math.round(f.confidence_score * 100)}% conf
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-sm font-semibold text-graphite">
-                        {f.raw_value ? f.raw_value : <span className="text-neutral-400 italic font-normal">[Missing]</span>}
+                      <div className="text-sm font-bold text-white font-mono tracking-tight">
+                        {f.raw_value ? f.raw_value : <span className="text-textMuted italic font-normal">[Missing]</span>}
                       </div>
 
                       {f.normalized_value && f.normalized_value !== f.raw_value && (
-                        <div className="text-[11px] text-mutedText font-mono mt-0.5">
-                          Normalized: {f.normalized_value}
+                        <div className="text-[11px] text-textMuted font-mono mt-1">
+                          Normalized: <span className="text-slate-300">{f.normalized_value}</span>
                         </div>
                       )}
 
-                      {/* Evidence Snippet */}
+                      {/* Evidence Context Snippet */}
                       {f.evidence && (
-                        <div className="mt-2 pt-2 border-t border-borderLight/60 text-[11px] text-mutedText flex items-center justify-between">
-                          <span className="truncate max-w-[240px]">
-                            Snippet: &ldquo;{f.evidence.evidence_text}&rdquo;
+                        <div className="mt-2 pt-2 border-t border-white/[0.06] text-[11px] text-textMuted flex items-center justify-between font-mono">
+                          <span className="truncate max-w-[240px] text-slate-400">
+                            &ldquo;{f.evidence.evidence_text}&rdquo;
                           </span>
-                          <span className="text-[10px] text-neutral-400 font-mono">
+                          <span className="text-[10px] text-cyan-400 font-semibold">
                             p.{f.evidence.page_number}
                           </span>
                         </div>
@@ -344,43 +375,33 @@ export default function DocumentDetailPage() {
           {activeTab === 'validations' && (
             <div className="space-y-3 overflow-y-auto max-h-[720px]">
               {(!doc.validations || doc.validations.length === 0) ? (
-                <div className="p-8 text-center text-xs text-mutedText bg-surface border border-borderLight rounded-lg">
-                  Zero validation failures or checks recorded.
+                <div className="p-8 text-center text-xs text-textMuted glass-card rounded-xl border border-white/[0.08]">
+                  Zero validation failures recorded for this document.
                 </div>
               ) : (
                 doc.validations.map((v: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className={`p-3.5 rounded-lg border text-xs ${
-                      v.passed
-                        ? 'border-emerald-200 bg-emerald-50/30 text-emerald-900'
-                        : v.severity === 'critical'
-                        ? 'border-red-200 bg-red-50/40 text-red-900'
-                        : 'border-amber-200 bg-amber-50/30 text-amber-900'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between font-semibold mb-1">
-                      <div className="flex items-center gap-1.5">
-                        {v.passed ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        ) : (
-                          <AlertTriangle className="w-4 h-4 text-red-600" />
-                        )}
-                        <span>{v.rule_id}</span>
-                      </div>
-                      <span className="uppercase text-[10px] font-mono font-medium">{v.severity}</span>
+                  <div key={idx} className="p-3.5 rounded-xl border border-white/[0.08] glass-card">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-mono text-cyan-300 font-medium">{v.rule_id}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                        v.passed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'
+                      }`}>
+                        {v.passed ? 'PASSED' : v.severity}
+                      </span>
                     </div>
-                    <p className="text-[11px] mt-1 text-graphite/90">{v.explanation}</p>
+                    <p className="text-xs text-textSecondary mt-1">{v.explanation}</p>
                   </div>
                 ))
               )}
             </div>
           )}
 
-          {/* TAB 3: JSON Raw Trace */}
+          {/* TAB 3: JSON Trace */}
           {activeTab === 'json' && (
-            <div className="p-3 rounded-lg bg-[#121316] text-neutral-300 font-mono text-[11px] overflow-auto max-h-[700px]">
-              <pre>{JSON.stringify(doc, null, 2)}</pre>
+            <div className="p-4 rounded-xl glass-card border border-white/[0.08] overflow-x-auto max-h-[720px]">
+              <pre className="text-[11px] font-mono text-cyan-300/90 leading-relaxed">
+                {JSON.stringify(doc, null, 2)}
+              </pre>
             </div>
           )}
         </div>
@@ -388,4 +409,3 @@ export default function DocumentDetailPage() {
     </div>
   );
 }
-
