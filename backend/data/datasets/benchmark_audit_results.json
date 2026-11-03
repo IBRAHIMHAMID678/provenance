@@ -1,0 +1,495 @@
+{
+  "dataset_name": "Deterministic Insurance Benchmark Gold 30",
+  "dataset_id": "dac5a5c7-6cb9-4264-adeb-3959dbbab935",
+  "total_documents": 30,
+  "partitions": {
+    "train": 18,
+    "validation": 6,
+    "test": 6
+  },
+  "duplicate_leakage_detected": false,
+  "total_annotations": 260,
+  "evaluation_target": "test_partition",
+  "benchmark_summaries": {
+    "native_pymupdf": {
+      "method_id": "native_pymupdf",
+      "total_documents": 6,
+      "total_fields": 52,
+      "total_correct_fields": 47,
+      "exact_accuracy": 0.6731,
+      "normalized_accuracy": 0.9038,
+      "critical_field_accuracy": 0.8571,
+      "document_level_accuracy": 0.5,
+      "completeness": 0.9615,
+      "hallucination_rate": 0.0577,
+      "human_review_rate": 0.0,
+      "p50_latency_ms": 20.5,
+      "p90_latency_ms": 26.5,
+      "p95_latency_ms": 28.7,
+      "total_machine_cost": 0.0,
+      "total_human_review_cost": 0.0,
+      "cost_per_document": 0.0,
+      "cost_per_correct_field": 0.0,
+      "field_breakdown": {
+        "claim_id": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "policy_number": {
+          "total": 4,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "claimant_name": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "incident_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "filing_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "requested_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "currency": {
+          "total": 6,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "claim_status": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "invoice_number": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "invoice_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "vendor_name": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "subtotal": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "tax_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "discount_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 0.0,
+          "missing": 2
+        },
+        "total_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 0.0,
+          "missing": 0
+        },
+        "insurer_name": {
+          "total": 2,
+          "exact_acc": 0.5,
+          "norm_acc": 0.5,
+          "missing": 0
+        },
+        "policyholder_name": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "effective_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "expiration_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "coverage_type": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "premium_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "coverage_limit": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "deductible": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        }
+      }
+    },
+    "paddleocr": {
+      "method_id": "paddleocr",
+      "total_documents": 6,
+      "total_fields": 52,
+      "total_correct_fields": 44,
+      "exact_accuracy": 0.5769,
+      "normalized_accuracy": 0.8462,
+      "critical_field_accuracy": 1.0,
+      "document_level_accuracy": 0.3333,
+      "completeness": 1.0,
+      "hallucination_rate": 0.1538,
+      "human_review_rate": 0.0,
+      "p50_latency_ms": 5505.9,
+      "p90_latency_ms": 9621.3,
+      "p95_latency_ms": 10514.5,
+      "total_machine_cost": 0.0006,
+      "total_human_review_cost": 0.0,
+      "cost_per_document": 0.0001,
+      "cost_per_correct_field": 1e-05,
+      "field_breakdown": {
+        "claim_id": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "policy_number": {
+          "total": 4,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "claimant_name": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "incident_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "filing_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "requested_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "currency": {
+          "total": 6,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "claim_status": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "invoice_number": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "invoice_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "vendor_name": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 0.0,
+          "missing": 0
+        },
+        "subtotal": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "tax_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "discount_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 0.0,
+          "missing": 0
+        },
+        "total_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "insurer_name": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "policyholder_name": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 0.0,
+          "missing": 0
+        },
+        "effective_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "expiration_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "coverage_type": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 0.0,
+          "missing": 0
+        },
+        "premium_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "coverage_limit": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "deductible": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        }
+      }
+    },
+    "hybrid": {
+      "method_id": "hybrid",
+      "total_documents": 6,
+      "total_fields": 52,
+      "total_correct_fields": 47,
+      "exact_accuracy": 0.6731,
+      "normalized_accuracy": 0.9038,
+      "critical_field_accuracy": 0.8571,
+      "document_level_accuracy": 0.5,
+      "completeness": 0.9615,
+      "hallucination_rate": 0.0577,
+      "human_review_rate": 0.0,
+      "p50_latency_ms": 107.6,
+      "p90_latency_ms": 117.4,
+      "p95_latency_ms": 117.7,
+      "total_machine_cost": 0.0,
+      "total_human_review_cost": 0.0,
+      "cost_per_document": 0.0,
+      "cost_per_correct_field": 0.0,
+      "field_breakdown": {
+        "claim_id": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "policy_number": {
+          "total": 4,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "claimant_name": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "incident_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "filing_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "requested_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "currency": {
+          "total": 6,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "claim_status": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "invoice_number": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "invoice_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "vendor_name": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "subtotal": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "tax_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "discount_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 0.0,
+          "missing": 2
+        },
+        "total_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 0.0,
+          "missing": 0
+        },
+        "insurer_name": {
+          "total": 2,
+          "exact_acc": 0.5,
+          "norm_acc": 0.5,
+          "missing": 0
+        },
+        "policyholder_name": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "effective_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "expiration_date": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "coverage_type": {
+          "total": 2,
+          "exact_acc": 1.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "premium_amount": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "coverage_limit": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        },
+        "deductible": {
+          "total": 2,
+          "exact_acc": 0.0,
+          "norm_acc": 1.0,
+          "missing": 0
+        }
+      }
+    }
+  }
+}

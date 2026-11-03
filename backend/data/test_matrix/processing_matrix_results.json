@@ -1,0 +1,157 @@
+[
+  {
+    "document": "01_clean_digital",
+    "quality": "HIGH_DIGITAL",
+    "native": {
+      "extracted": 10,
+      "correct": 7,
+      "duration_ms": 44.0,
+      "cost_usd": 0.0,
+      "status": "completed"
+    },
+    "paddleocr": {
+      "extracted": 10,
+      "correct": 7,
+      "evidence_count": 10,
+      "duration_ms": 11778.13,
+      "cost_usd": 0.000164,
+      "status": "completed"
+    },
+    "tesseract": {
+      "available": false,
+      "diagnostic": "Tesseract binary unavailable: tesseract is not installed or it's not in your PATH. See README file for more information.. Set TESSERACT_PATH in .env or install Tesseract-OCR.",
+      "status": "failed"
+    },
+    "hybrid": {
+      "extracted": 10,
+      "correct": 7,
+      "duration_ms": 107.33,
+      "cost_usd": 0.0,
+      "status": "completed"
+    }
+  },
+  {
+    "document": "02_scanned",
+    "quality": "SCANNED",
+    "native": {
+      "extracted": 0,
+      "correct": 0,
+      "duration_ms": 4.0,
+      "cost_usd": 0.0,
+      "status": "completed"
+    },
+    "paddleocr": {
+      "extracted": 10,
+      "correct": 7,
+      "evidence_count": 10,
+      "duration_ms": 5927.18,
+      "cost_usd": 8.2e-05,
+      "status": "completed"
+    },
+    "tesseract": {
+      "available": false,
+      "diagnostic": "Tesseract binary unavailable: tesseract is not installed or it's not in your PATH. See README file for more information.. Set TESSERACT_PATH in .env or install Tesseract-OCR.",
+      "status": "failed"
+    },
+    "hybrid": {
+      "extracted": 10,
+      "correct": 7,
+      "duration_ms": 5450.69,
+      "cost_usd": 7.3e-05,
+      "status": "completed"
+    }
+  },
+  {
+    "document": "03_low_quality_scanned",
+    "quality": "SCANNED",
+    "native": {
+      "extracted": 0,
+      "correct": 0,
+      "duration_ms": 3.0,
+      "cost_usd": 0.0,
+      "status": "completed"
+    },
+    "paddleocr": {
+      "extracted": 0,
+      "correct": 0,
+      "evidence_count": 0,
+      "duration_ms": 3626.67,
+      "cost_usd": 5e-05,
+      "status": "completed"
+    },
+    "tesseract": {
+      "available": false,
+      "diagnostic": "Tesseract binary unavailable: tesseract is not installed or it's not in your PATH. See README file for more information.. Set TESSERACT_PATH in .env or install Tesseract-OCR.",
+      "status": "failed"
+    },
+    "hybrid": {
+      "extracted": 0,
+      "correct": 0,
+      "duration_ms": 2720.95,
+      "cost_usd": 7.1e-05,
+      "status": "completed"
+    }
+  },
+  {
+    "document": "04_mixed_digital_scanned",
+    "quality": "MIXED",
+    "native": {
+      "extracted": 10,
+      "correct": 7,
+      "duration_ms": 16.0,
+      "cost_usd": 0.0,
+      "status": "completed"
+    },
+    "paddleocr": {
+      "extracted": 10,
+      "correct": 7,
+      "evidence_count": 10,
+      "duration_ms": 12028.83,
+      "cost_usd": 0.000167,
+      "status": "completed"
+    },
+    "tesseract": {
+      "available": false,
+      "diagnostic": "Tesseract binary unavailable: tesseract is not installed or it's not in your PATH. See README file for more information.. Set TESSERACT_PATH in .env or install Tesseract-OCR.",
+      "status": "failed"
+    },
+    "hybrid": {
+      "extracted": 10,
+      "correct": 7,
+      "duration_ms": 322.48,
+      "cost_usd": 0.0,
+      "status": "completed"
+    }
+  },
+  {
+    "document": "05_multipage",
+    "quality": "HIGH_DIGITAL",
+    "native": {
+      "extracted": 10,
+      "correct": 7,
+      "duration_ms": 71.0,
+      "cost_usd": 0.0,
+      "status": "completed"
+    },
+    "paddleocr": {
+      "extracted": 10,
+      "correct": 7,
+      "evidence_count": 10,
+      "duration_ms": 26424.57,
+      "cost_usd": 0.000367,
+      "status": "completed"
+    },
+    "tesseract": {
+      "available": false,
+      "diagnostic": "Tesseract binary unavailable: tesseract is not installed or it's not in your PATH. See README file for more information.. Set TESSERACT_PATH in .env or install Tesseract-OCR.",
+      "status": "failed"
+    },
+    "hybrid": {
+      "extracted": 10,
+      "correct": 7,
+      "duration_ms": 324.81,
+      "cost_usd": 0.0,
+      "status": "completed"
+    }
+  }
+]
