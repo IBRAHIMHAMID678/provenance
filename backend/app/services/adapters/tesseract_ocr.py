@@ -19,9 +19,16 @@ class TesseractOCRAdapter(BaseExtractionAdapter):
         # Check pytesseract and binary presence
         try:
             import pytesseract
-            # Check configured path or system PATH
-            if os.path.exists(settings.TESSERACT_PATH):
+            import shutil
+            # Priority 1: Configured explicit path
+            if settings.TESSERACT_PATH and os.path.exists(settings.TESSERACT_PATH):
                 pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_PATH
+            else:
+                # Priority 2: System PATH lookup (Linux / Docker / container runtime)
+                system_tesseract = shutil.which("tesseract")
+                if system_tesseract:
+                    pytesseract.pytesseract.tesseract_cmd = system_tesseract
+
             ver = pytesseract.get_tesseract_version()
             return True, f"Tesseract OCR binary v{ver} available at {pytesseract.pytesseract.tesseract_cmd}"
         except Exception as e:

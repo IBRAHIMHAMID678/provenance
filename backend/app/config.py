@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import List
+import shutil
+from typing import List, Any
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, field_validator
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -20,6 +21,25 @@ class Settings(BaseSettings):
     PORT: int = 8000
     HOST: str = "0.0.0.0"
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            return [i.strip() for i in v.split(",") if i.strip()]
+        elif isinstance(v, list):
+            return v
+        return ["http://localhost:3000", "http://127.0.0.1:3000"]
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def set_debug_mode(cls, v: Any, info) -> bool:
+        if v is not None:
+            if isinstance(v, str):
+                return v.lower() in ("true", "1", "yes")
+            return bool(v)
+        env_val = info.data.get("ENV", "development") if hasattr(info, "data") else "development"
+        return False if str(env_val).lower() == "production" else True
 
     # Storage paths on D: drive
     STORAGE_ROOT: Path = DATA_DIR
