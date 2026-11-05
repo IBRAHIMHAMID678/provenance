@@ -10,6 +10,7 @@ if os.path.exists(db_path):
         ("extracted_fields", "confidence_signals", "TEXT DEFAULT '{}'"),
         ("field_evidence", "is_located", "BOOLEAN DEFAULT 1"),
         ("field_evidence", "quads", "TEXT"),
+        ("documents", "is_synthetic", "BOOLEAN DEFAULT 0"),
         ("evaluation_results", "mismatch_rate", "FLOAT DEFAULT 0.0"),
         ("evaluation_results", "cost_basis", "VARCHAR(30) DEFAULT 'modeled'")
     ]

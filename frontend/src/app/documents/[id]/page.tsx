@@ -112,6 +112,15 @@ export default function DocumentDetailPage() {
               <Badge variant="neutral">
                 {doc.document_type || 'Unknown'}
               </Badge>
+              {doc.is_synthetic ? (
+                <Badge variant="neutral" className="border-amber-500/30 bg-amber-500/10 text-amber-300 font-mono text-[10px]">
+                  SYNTHETIC
+                </Badge>
+              ) : (
+                <Badge variant="success" className="font-mono text-[10px]">
+                  REAL PRODUCTION
+                </Badge>
+              )}
               <Badge
                 dot
                 variant={

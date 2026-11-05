@@ -59,15 +59,15 @@ class NativePyMuPDFAdapter(BaseExtractionAdapter):
             
             patterns = {
                 "claim_id": [
-                    r"(?:claim\s*(?:id|number|#|ref)(?:\s*/\s*reference)?|claim\s*no\.?)[:\s]*(?:\n|\r|\s)+([A-Z0-9-]+)",
-                    r"claim\s*(?:id|number|#|ref)[:\s]+(?:\n|\r|\s)*([A-Z0-9-]+)"
+                    r"(?:claim\s*(?:id|number|#|ref)(?:\s*/\s*reference)?|reference\s*(?:number|id|#)|claim\s*no\.?)[:\s]*(?:\n|\r|\s)+([A-Z0-9-]+)",
+                    r"(?:claim\s*(?:id|number|#|ref|reference)|reference\s*(?:number|id|#))[:\s]+(?:\n|\r|\s)*([A-Z0-9-]+)"
                 ],
                 "policy_number": [
-                    r"policy\s*(?:number|id|#|no\.?)[:\s/]+(?:\n|\r|\s)*([A-Z0-9-]+)"
+                    r"(?:policy\s*(?:number|id|#|no\.?|contract\s*#?)|policy\s*contract)[:\s/]+(?:\n|\r|\s)*([A-Z0-9-]+)"
                 ],
                 "claimant_name": [
-                    r"claimant\s*(?:full\s*)?name[:\s/]+(?:\n|\r|\s)*([A-Za-z\s.'-]+?)(?=\n\n|\r|\n[A-Z]|$)",
-                    r"insured\s*name[:\s/]+(?:\n|\r|\s)*([A-Za-z\s.'-]+?)(?=\n|$)"
+                    r"(?:claimant\s*(?:full\s*)?name|insured\s*name|named\s*insured)[:\s/]+(?:\n|\r|\s)*([A-Za-z\s.'-]+?)(?=\n\n|\r|\n[A-Z]|$)",
+                    r"(?:claimant\s*(?:full\s*)?name|insured\s*name|named\s*insured)[:\s/]+(?:\n|\r|\s)*([A-Za-z\s.'-]+?)(?=\n|$)"
                 ],
                 "policyholder_name": [
                     r"(?:named\s*)?policyholder(?:\s*name)?[:\s/]+(?:\n|\r|\s)*([A-Za-z\s.'-]+?)(?=\n\n|\r|\n[A-Z]|$)",
@@ -82,7 +82,7 @@ class NativePyMuPDFAdapter(BaseExtractionAdapter):
                 ],
                 "filing_date": [
                     r"(?:claim\s*)?filing\s*date[:\s/]+(?:\n|\r|\s)*([0-9\/-]+|\w+\s+\d{1,2},?\s+\d{4})",
-                    r"date\s*reported[:\s/]+(?:\n|\r|\s)*([0-9\/-]+|\w+\s+\d{1,2},?\s+\d{4})"
+                    r"(?:date\s*reported|notification\s*date)[:\s/]+(?:\n|\r|\s)*([0-9\/-]+|\w+\s+\d{1,2},?\s+\d{4})"
                 ],
                 "effective_date": [
                     r"(?:effective|start)\s*date[:\s/]+(?:\n|\r|\s)*([0-9\/-]+|\w+\s+\d{1,2},?\s+\d{4})"
@@ -91,7 +91,8 @@ class NativePyMuPDFAdapter(BaseExtractionAdapter):
                     r"(?:expiration|expiry|end)\s*date[:\s/]+(?:\n|\r|\s)*([0-9\/-]+|\w+\s+\d{1,2},?\s+\d{4})"
                 ],
                 "requested_amount": [
-                    r"(?:total\s*)?(?:requested|claimed)\s*amount[:\s/]+(?:\n|\r|\s)*([$€£]?\s*[\d,]+(?:\.\d{2})?)"
+                    r"(?:total\s*)?(?:requested|claimed)\s*amount[:\s/]+(?:\n|\r|\s)*([$€£]?\s*[\d,]+(?:\.\d{2})?)",
+                    r"(?:total\s*indemnity\s*claimed)[:\s/]+(?:\n|\r|\s)*([$€£]?\s*[\d,]+(?:\.\d{2})?)"
                 ],
                 "premium_amount": [
                     r"(?:gross\s*)?premium\s*(?:amount)?[:\s/]+(?:\n|\r|\s)*([$€£]?\s*[\d,]+(?:\.\d{2})?)"
