@@ -329,6 +329,15 @@ export default function DocumentsPage() {
                           </Link>
                           <div className="flex items-center gap-2 mt-0.5 text-[10px] font-mono text-slate-500">
                             <span>ID: {doc.id.substring(0, 8)}</span>
+                            {doc.is_synthetic ? (
+                              <Badge variant="neutral" className="text-[9px] py-0 px-1 font-semibold border-amber-500/20 text-amber-300 bg-amber-500/10">
+                                SYNTHETIC
+                              </Badge>
+                            ) : (
+                              <Badge variant="success" className="text-[9px] py-0 px-1 font-semibold">
+                                REAL
+                              </Badge>
+                            )}
                             {doc.is_duplicate && (
                               <Badge variant="warning" className="text-[9px] py-0 px-1 font-semibold">
                                 DUP HASH

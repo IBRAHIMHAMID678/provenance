@@ -40,6 +40,7 @@ class Document(Base):
     document_type = Column(String(60), default="unclassified", index=True)  # claim_form, policy_schedule, etc.
     quality_category = Column(String(60), default="pending")  # HIGH_DIGITAL, CLEAN_SCAN, DEGRADED_SCAN, MIXED
     is_duplicate = Column(Boolean, default=False)
+    is_synthetic = Column(Boolean, default=False)
     
     # Overall Status
     status = Column(String(40), default="uploaded", index=True)  # uploaded, queued, processing, completed, review_required, failed

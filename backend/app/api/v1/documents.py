@@ -124,6 +124,7 @@ async def upload_document(
         "document_type": doc.document_type,
         "page_count": doc.page_count,
         "quality_category": doc.quality_category,
+        "is_synthetic": getattr(doc, "is_synthetic", False),
         "status": doc.status,
         "is_duplicate": is_duplicate
     }
@@ -160,6 +161,7 @@ def list_documents(
             "status": d.status,
             "status_message": d.status_message,
             "is_duplicate": d.is_duplicate,
+            "is_synthetic": getattr(d, "is_synthetic", False),
             "created_at": d.created_at.isoformat()
         })
 
@@ -235,6 +237,7 @@ def get_document_detail(doc_id: str, db: Session = Depends(get_db)):
         "page_count": doc.page_count,
         "document_type": doc.document_type,
         "quality_category": doc.quality_category,
+        "is_synthetic": getattr(doc, "is_synthetic", False),
         "status": doc.status,
         "status_message": doc.status_message,
         "created_at": doc.created_at.isoformat(),

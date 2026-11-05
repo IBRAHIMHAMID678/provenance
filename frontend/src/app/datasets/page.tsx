@@ -34,7 +34,7 @@ export default function DatasetsPage() {
     loadDatasets();
   }, []);
 
-  const handleGenerate = async (count = 6) => {
+  const handleGenerate = async (count = 40) => {
     try {
       setGenerating(true);
       await api.generateSyntheticDataset(count);
@@ -68,11 +68,11 @@ export default function DatasetsPage() {
         <Button
           variant="primary"
           size="md"
-          onClick={() => handleGenerate(6)}
+          onClick={() => handleGenerate(40)}
           loading={generating}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Synthesize 6-Doc Benchmark Partition</span>
+          <span>{generating ? 'Synthesizing 40-Doc Ground Truth Set...' : 'Synthesize 40-Doc Benchmark Partition'}</span>
         </Button>
       </div>
 
@@ -108,6 +108,16 @@ export default function DatasetsPage() {
         </div>
       </Card>
 
+      {/* Real Documents Ingestion Notice */}
+      <Card className="p-4 bg-sky-500/5 border-sky-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5">
+          <Database className="w-4 h-4 text-sky-400 shrink-0" />
+          <div className="text-slate-300">
+            <strong className="text-white font-mono">Benchmarking Real Documents:</strong> Drop private PDFs into <code className="text-sky-300 px-1 py-0.5 rounded bg-white/[0.05]">backend/data/real_benchmarks/</code> and run <code className="text-sky-300 px-1 py-0.5 rounded bg-white/[0.05]">python scripts/ingest_real_benchmarks.py</code> to benchmark production files.
+          </div>
+        </div>
+      </Card>
+
       {/* Datasets Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {loading ? (
@@ -136,9 +146,14 @@ export default function DatasetsPage() {
                     {ds.description || 'Deterministic insurance ground-truth benchmark suite.'}
                   </p>
                 </div>
-                <Badge variant="neutral">
-                  v{ds.version || 1}.0
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant={ds.source_type === 'synthetic' ? 'warning' : 'success'}>
+                    {ds.source_type === 'synthetic' ? 'SYNTHETIC' : 'REAL DATA'}
+                  </Badge>
+                  <Badge variant="neutral">
+                    v{ds.version || 1}.0
+                  </Badge>
+                </div>
               </div>
 
               {/* Detailed Metrics */}
