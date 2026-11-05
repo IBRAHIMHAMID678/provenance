@@ -210,66 +210,127 @@ export default function OverviewPage() {
               </Link>
             </CardHeader>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-white/[0.02] text-slate-400 border-b border-white/[0.06] font-mono text-[11px]">
-                  <tr>
-                    <th className="py-3 px-4 font-medium">Document ID / File</th>
-                    <th className="py-3 px-3 font-medium">Class</th>
-                    <th className="py-3 px-3 font-medium">Quality Profile</th>
-                    <th className="py-3 px-3 font-medium">State</th>
-                    <th className="py-3 px-4 font-medium text-right">Inspect</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.04]">
-                  {docs.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
-                        No documents ingested yet. Click &quot;Seed Benchmark Partition&quot; above to initialize.
-                      </td>
-                    </tr>
+            {docs.length === 0 ? (
+              <div className="py-12 px-4 text-center max-w-sm mx-auto space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/25 text-sky-400 flex items-center justify-center mx-auto">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-white">No Recent Activity</h4>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Initialize sample documents to experience automated extraction and spatial evidence localization.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleGenerateSampleData}
+                  disabled={generating}
+                  className="text-xs font-medium"
+                >
+                  {generating ? (
+                    <>
+                      <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin mr-1.5" />
+                      Seeding...
+                    </>
                   ) : (
-                    docs.map((d) => (
-                      <tr key={d.id} className="hover:bg-white/[0.02] transition-colors group">
-                        <td className="py-3 px-4 font-medium text-white flex items-center gap-2.5">
-                          <FileText className="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors flex-shrink-0" />
-                          <span className="truncate max-w-[210px] text-xs font-mono text-slate-200">{d.filename}</span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <Badge variant="neutral">
-                            {d.document_type || 'Unknown'}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-3 text-[11px] font-mono text-slate-400">
-                          {d.quality_category || 'pending'}
-                        </td>
-                        <td className="py-3 px-3">
-                          <Badge
-                            dot
-                            variant={
-                              d.status === 'completed'
-                                ? 'success'
-                                : d.status === 'review_required'
-                                ? 'warning'
-                                : 'danger'
-                            }
-                          >
-                            {d.status}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <Link href={`/documents/${d.id}`}>
-                            <Button variant="secondary" size="sm">
-                              Stage
-                            </Button>
-                          </Link>
-                        </td>
-                      </tr>
-                    ))
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 mr-1.5 text-sky-300" />
+                      Load Sample Document
+                    </>
                   )}
-                </tbody>
-              </table>
-            </div>
+                </Button>
+              </div>
+            ) : (
+              <div>
+                {/* Desktop Table (>= 640px) */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-white/[0.02] text-slate-400 border-b border-white/[0.06] font-mono text-[11px]">
+                      <tr>
+                        <th className="py-3 px-4 font-medium">Document ID / File</th>
+                        <th className="py-3 px-3 font-medium">Class</th>
+                        <th className="py-3 px-3 font-medium">Quality Profile</th>
+                        <th className="py-3 px-3 font-medium">State</th>
+                        <th className="py-3 px-4 font-medium text-right">Inspect</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {docs.map((d) => (
+                        <tr key={d.id} className="hover:bg-white/[0.02] transition-colors group">
+                          <td className="py-3 px-4 font-medium text-white flex items-center gap-2.5">
+                            <FileText className="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors flex-shrink-0" />
+                            <span className="truncate max-w-[210px] text-xs font-mono text-slate-200">{d.filename}</span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <Badge variant="neutral">
+                              {d.document_type || 'Unknown'}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-3 text-[11px] font-mono text-slate-400">
+                            {d.quality_category || 'pending'}
+                          </td>
+                          <td className="py-3 px-3">
+                            <Badge
+                              dot
+                              variant={
+                                d.status === 'completed'
+                                  ? 'success'
+                                  : d.status === 'review_required'
+                                  ? 'warning'
+                                  : 'danger'
+                              }
+                            >
+                              {d.status}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <Link href={`/documents/${d.id}`}>
+                              <Button variant="secondary" size="sm">
+                                Stage
+                              </Button>
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Activity Cards (< 640px) */}
+                <div className="sm:hidden divide-y divide-white/[0.04]">
+                  {docs.map((d) => (
+                    <div key={d.id} className="p-3.5 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-xs font-mono font-medium text-slate-200 truncate block">
+                          {d.filename}
+                        </span>
+                        <Badge
+                          dot
+                          variant={
+                            d.status === 'completed'
+                              ? 'success'
+                              : d.status === 'review_required'
+                              ? 'warning'
+                              : 'danger'
+                          }
+                        >
+                          {d.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-1">
+                        <span>{d.document_type || 'Unknown'} · {d.quality_category || 'pending'}</span>
+                        <Link href={`/documents/${d.id}`}>
+                          <Button variant="secondary" size="sm" className="h-6 text-[10px] px-2">
+                            Inspect
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </Card>
         </div>
 
