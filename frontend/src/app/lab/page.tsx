@@ -10,7 +10,10 @@ import {
   CheckCircle2, 
   XCircle,
   Cpu,
-  Layers
+  Layers,
+  Sparkles,
+  Target,
+  Zap
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -52,178 +55,202 @@ export default function ExtractionLabPage() {
   const activeMethodObj = methods.find(m => m.method_id === selectedMethodId);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-graphite">Extraction Lab</h1>
-          <p className="text-sm text-mutedText mt-0.5">
-            Test, inspect, and benchmark individual extraction adapters side-by-side with full token & latency observability.
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-mono tracking-widest uppercase px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+              Extraction Adapter Workbench
+            </span>
+            <span className="text-textMuted text-xs">·</span>
+            <span className="text-xs text-textSecondary font-mono">
+              Live Token & Latency Profiler
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+            Extraction Lab
+          </h1>
+          <p className="text-xs text-textSecondary mt-1 max-w-2xl">
+            Test, inspect, and benchmark individual extraction adapters side-by-side with full token, latency, and cost visibility.
           </p>
         </div>
       </div>
 
-      {/* Control Configuration Bar */}
-      <div className="p-4 rounded-lg bg-surface border border-borderLight grid grid-cols-12 gap-4 items-center">
-        <div className="col-span-5">
-          <label className="text-xs font-medium text-graphite block mb-1">Target Document</label>
-          <select
-            value={selectedDocId}
-            onChange={(e) => setSelectedDocId(e.target.value)}
-            className="w-full p-2 rounded-md border border-borderLight bg-background text-xs text-graphite focus:outline-none"
-          >
-            {documents.length === 0 ? (
-              <option value="">No documents available</option>
-            ) : (
-              documents.map(d => (
-                <option key={d.id} value={d.id}>
-                  {d.filename} ({d.document_type} - {d.quality_category})
+      {/* Control Configuration Console */}
+      <div className="p-6 rounded-2xl glass-panel border border-white/[0.08] shadow-float space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
+          {/* Document Selector */}
+          <div className="md:col-span-5 space-y-1.5">
+            <label className="text-xs font-mono text-textSecondary uppercase tracking-wider block">
+              1. Target Ingested Document
+            </label>
+            <select
+              value={selectedDocId}
+              onChange={(e) => setSelectedDocId(e.target.value)}
+              className="w-full p-2.5 rounded-xl bg-[#07090E] border border-white/[0.12] text-xs font-mono text-white focus:outline-none focus:border-cyan-400 focus:shadow-glow-cyan transition-all"
+            >
+              {documents.length === 0 ? (
+                <option value="">No documents available</option>
+              ) : (
+                documents.map(d => (
+                  <option key={d.id} value={d.id}>
+                    {d.filename} ({d.document_type} - {d.quality_category})
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          {/* Engine Selector */}
+          <div className="md:col-span-5 space-y-1.5">
+            <label className="text-xs font-mono text-textSecondary uppercase tracking-wider block">
+              2. Extraction Engine Adapter
+            </label>
+            <select
+              value={selectedMethodId}
+              onChange={(e) => setSelectedMethodId(e.target.value)}
+              className="w-full p-2.5 rounded-xl bg-[#07090E] border border-white/[0.12] text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-400 focus:shadow-glow-cyan transition-all"
+            >
+              {methods.map(m => (
+                <option key={m.method_id} value={m.method_id}>
+                  {m.display_name} {!m.is_available ? '(Offline / Missing Dependency)' : ''}
                 </option>
-              ))
-            )}
-          </select>
+              ))}
+            </select>
+          </div>
+
+          {/* Execute Button */}
+          <div className="md:col-span-2">
+            <button
+              onClick={handleRun}
+              disabled={loading || !selectedDocId || (activeMethodObj && !activeMethodObj.is_available)}
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-glow-cyan disabled:opacity-40"
+            >
+              <Play className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>{loading ? 'Running...' : 'Execute Run'}</span>
+            </button>
+          </div>
         </div>
 
-        <div className="col-span-5">
-          <label className="text-xs font-medium text-graphite block mb-1">Extraction Engine Adapter</label>
-          <select
-            value={selectedMethodId}
-            onChange={(e) => setSelectedMethodId(e.target.value)}
-            className="w-full p-2 rounded-md border border-borderLight bg-background text-xs text-graphite focus:outline-none"
-          >
-            {methods.map(m => (
-              <option key={m.method_id} value={m.method_id}>
-                {m.display_name} {!m.is_available ? '(Unavailable)' : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="col-span-2 flex items-end h-full">
-          <button
-            onClick={handleRun}
-            disabled={loading || !selectedDocId}
-            className="w-full py-2 px-4 rounded-md bg-charcoal text-white hover:bg-neutral-800 text-xs font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-40 shadow-sm"
-          >
-            <Play className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>{loading ? 'Running...' : 'Execute'}</span>
-          </button>
-        </div>
+        {/* Diagnostic Status Bar */}
+        {activeMethodObj && (
+          <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs font-mono">
+            <span className="text-textMuted flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${activeMethodObj.is_available ? 'bg-emerald-400 shadow-[0_0_8px_#10B981]' : 'bg-red-400'}`}></span>
+              <span>Diagnostic: {activeMethodObj.status_message}</span>
+            </span>
+            <span className="text-cyan-400 text-[11px] font-semibold">{activeMethodObj.method_id}</span>
+          </div>
+        )}
       </div>
 
-      {/* Engine Status Diagnostic Card */}
-      {activeMethodObj && (
-        <div className={`p-3 rounded-md text-xs flex items-center justify-between border ${
-          activeMethodObj.is_available 
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
-            : 'bg-amber-50 border-amber-200 text-amber-900'
-        }`}>
-          <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 flex-shrink-0" />
-            <span className="font-semibold">{activeMethodObj.display_name}:</span>
-            <span>{activeMethodObj.status_message}</span>
-          </div>
-          <span className="font-mono text-[11px] uppercase font-bold">
-            {activeMethodObj.is_available ? 'Ready' : 'Offline'}
-          </span>
-        </div>
-      )}
-
-      {/* Result View */}
+      {/* Execution Results Stage */}
       {result && (
-        <div className="space-y-4">
-          {/* Summary Strip */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="p-3 rounded-lg bg-surface border border-borderLight">
-              <span className="text-[11px] text-mutedText block">Latency</span>
-              <span className="text-lg font-bold font-mono text-graphite">{result.duration_ms} ms</span>
+        <div className="space-y-6">
+          {/* Telemetry Strip */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="glass-card p-4 rounded-xl border border-white/[0.08]">
+              <div className="flex items-center justify-between text-textSecondary text-xs">
+                <span>Inference Duration</span>
+                <Clock className="w-3.5 h-3.5 text-cyan-400" />
+              </div>
+              <div className="text-2xl font-bold text-white mt-2 font-mono">
+                {result.duration_ms} <span className="text-sm font-normal text-textMuted">ms</span>
+              </div>
             </div>
-            <div className="p-3 rounded-lg bg-surface border border-borderLight">
-              <span className="text-[11px] text-mutedText block">Cost (USD)</span>
-              <span className="text-lg font-bold font-mono text-graphite">${result.calculated_cost_usd?.toFixed(6) || '0.000000'}</span>
+
+            <div className="glass-card p-4 rounded-xl border border-white/[0.08]">
+              <div className="flex items-center justify-between text-textSecondary text-xs">
+                <span>Machine Cost</span>
+                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <div className="text-2xl font-bold text-emerald-400 mt-2 font-mono">
+                ${result.calculated_cost_usd?.toFixed(6) || '0.000000'}
+              </div>
             </div>
-            <div className="p-3 rounded-lg bg-surface border border-borderLight">
-              <span className="text-[11px] text-mutedText block">Token Footprint</span>
-              <span className="text-lg font-bold font-mono text-graphite">{result.input_tokens + result.output_tokens} tok</span>
+
+            <div className="glass-card p-4 rounded-xl border border-white/[0.08]">
+              <div className="flex items-center justify-between text-textSecondary text-xs">
+                <span>Fields Extracted</span>
+                <Target className="w-3.5 h-3.5 text-blue-400" />
+              </div>
+              <div className="text-2xl font-bold text-white mt-2 font-mono">
+                {result.fields?.filter((f: any) => f.raw_value).length || 0}
+                <span className="text-sm font-normal text-textMuted"> / {result.fields?.length || 0}</span>
+              </div>
             </div>
-            <div className="p-3 rounded-lg bg-surface border border-borderLight">
-              <span className="text-[11px] text-mutedText block">Extraction Status</span>
-              <span className="text-lg font-bold uppercase text-emerald-700">{result.status}</span>
+
+            <div className="glass-card p-4 rounded-xl border border-white/[0.08]">
+              <div className="flex items-center justify-between text-textSecondary text-xs">
+                <span>Execution Status</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
+              </div>
+              <div className="text-xl font-bold text-cyan-300 mt-2 font-mono uppercase">
+                {result.status}
+              </div>
             </div>
           </div>
-
-          {/* Warnings or Errors */}
-          {result.warnings?.length > 0 && (
-            <div className="p-3 rounded-md bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
-              <div className="font-semibold flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                <span>Adapter Diagnostic Warnings:</span>
-              </div>
-              {result.warnings.map((w: string, i: number) => (
-                <div key={i} className="pl-5 font-mono text-[11px]">• {w}</div>
-              ))}
-            </div>
-          )}
-
-          {result.errors?.length > 0 && (
-            <div className="p-3 rounded-md bg-red-50 border border-red-200 text-xs text-red-900 space-y-1">
-              <div className="font-semibold flex items-center gap-1.5">
-                <XCircle className="w-4 h-4 text-red-600" />
-                <span>Adapter Errors:</span>
-              </div>
-              {result.errors.map((err: string, i: number) => (
-                <div key={i} className="pl-5 font-mono text-[11px]">• {err}</div>
-              ))}
-            </div>
-          )}
 
           {/* Extracted Fields Table */}
-          <div className="rounded-lg bg-surface border border-borderLight overflow-hidden">
-            <div className="p-3 border-b border-borderLight font-semibold text-xs text-graphite bg-surfaceSecondary">
-              Extracted Structured Fields & Evidence Coordinates
+          <div className="glass-panel rounded-2xl border border-white/[0.08] overflow-hidden shadow-float">
+            <div className="p-4 border-b border-white/[0.07] flex items-center justify-between bg-white/[0.02]">
+              <h2 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                Extracted Structured Attributes
+              </h2>
+              <span className="text-[11px] font-mono text-cyan-400">
+                Method: {result.method_id}
+              </span>
             </div>
-            <table className="w-full text-left text-xs">
-              <thead className="bg-surfaceSecondary/50 text-mutedText border-b border-borderLight">
-                <tr>
-                  <th className="py-2.5 px-4 font-medium">Field Name</th>
-                  <th className="py-2.5 px-3 font-medium">Raw Value</th>
-                  <th className="py-2.5 px-3 font-medium">Normalized</th>
-                  <th className="py-2.5 px-3 font-medium">Confidence</th>
-                  <th className="py-2.5 px-4 font-medium">Evidence Snippet</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-borderLight font-mono">
-                {result.fields?.map((f: any, idx: number) => {
-                  const ev = result.evidence?.find((e: any) => e.field_name === f.field_name);
-                  return (
-                    <tr key={idx} className="hover:bg-stone-50/70">
-                      <td className="py-2.5 px-4 font-sans font-medium text-graphite">
-                        {f.field_name}
-                      </td>
-                      <td className="py-2.5 px-3 text-graphite font-bold">
-                        {f.raw_value || <span className="text-neutral-400 font-normal italic">[Null]</span>}
-                      </td>
-                      <td className="py-2.5 px-3 text-mutedText">
-                        {f.normalized_value || '—'}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded font-mono ${
-                          f.confidence >= 0.9 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {(f.confidence * 100).toFixed(0)}%
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-4 font-sans text-mutedText text-[11px] truncate max-w-xs">
-                        {ev ? ev.evidence_text : '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-white/[0.02] text-textSecondary border-b border-white/[0.06] font-mono text-[11px]">
+                  <tr>
+                    <th className="py-3 px-4 font-medium">Field Identifier</th>
+                    <th className="py-3 px-4 font-medium">Extracted Value</th>
+                    <th className="py-3 px-3 font-medium">Confidence</th>
+                    <th className="py-3 px-3 font-medium">Type</th>
+                    <th className="py-3 px-4 font-medium">Spatial Evidence</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.04]">
+                  {result.fields?.map((f: any, idx: number) => {
+                    const ev = result.evidence?.find((e: any) => e.field_name === f.field_name);
+                    return (
+                      <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-3 px-4 font-mono text-cyan-300 font-medium">
+                          {f.field_name}
+                        </td>
+                        <td className="py-3 px-4 font-mono font-bold text-white">
+                          {f.raw_value ? f.raw_value : <span className="text-textMuted italic font-normal">[Missing]</span>}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                            f.confidence >= 0.90
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              : f.confidence > 0
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : 'bg-white/[0.06] text-slate-400'
+                          }`}>
+                            {Math.round(f.confidence * 100)}%
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-textMuted font-mono text-[11px]">
+                          {f.data_type}
+                        </td>
+                        <td className="py-3 px-4 text-slate-400 font-mono text-[11px] truncate max-w-[280px]">
+                          {ev ? `p.${ev.page_number}: "${ev.evidence_text}"` : 'None'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 }
-

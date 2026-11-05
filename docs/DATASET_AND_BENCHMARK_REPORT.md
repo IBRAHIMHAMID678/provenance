@@ -65,3 +65,4 @@ Our central thesis is: **"Extract less blindly. Verify more intelligently. Cost 
 3. **Adaptive Hybrid Strategy:**
    - The Hybrid Router delivers the optimal frontier: it routes clean digital pages to PyMuPDF, falls back to PaddleOCR when zero selectable text exists, and only escalates missing critical fields.
    - Result: Matches the top-tier accuracy (90.4%) and minimal hallucination rate (5.8%) while maintaining near-instant responsiveness (107 ms) and negligible operational cost.
+
