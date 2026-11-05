@@ -23,6 +23,9 @@ def list_review_queue(
         f = t.field
         doc = t.document
         ev = f.evidence if f else None
+        is_mock = False
+        if f and f.extraction_run and f.extraction_run.raw_response and isinstance(f.extraction_run.raw_response, dict):
+            is_mock = f.extraction_run.raw_response.get("metadata", {}).get("is_mock", False)
         results.append({
             "task_id": t.id,
             "document_id": t.document_id,
@@ -31,12 +34,16 @@ def list_review_queue(
             "field_name": f.field_name if f else "Unknown",
             "extracted_value": f.raw_value if f else None,
             "confidence_score": f.confidence_score if f else 0.0,
+            "confidence_signals": getattr(f, "confidence_signals", {}) if f else {},
             "priority": t.priority,
             "reason": t.reason,
             "status": t.status,
+            "is_mock": is_mock,
+            "evidence_located": getattr(f, "evidence_located", True) if f else True,
             "evidence_text": ev.evidence_text if ev else None,
             "page_number": ev.page_number if ev else 1,
             "bbox": [ev.bbox_x0, ev.bbox_y0, ev.bbox_x1, ev.bbox_y1] if ev and ev.bbox_x0 is not None else None,
+            "quads": getattr(ev, "quads", None) if ev else None,
             "created_at": t.created_at.isoformat()
         })
     return {"tasks": results, "total": len(results)}

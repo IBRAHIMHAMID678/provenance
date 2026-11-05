@@ -188,11 +188,15 @@ def get_document_detail(doc_id: str, db: Session = Depends(get_db)):
                 "confidence_score": f.confidence_score,
                 "is_critical": f.is_critical,
                 "needs_review": f.needs_review,
+                "evidence_located": getattr(f, "evidence_located", True),
+                "confidence_signals": getattr(f, "confidence_signals", {}) or {},
                 "evidence": {
                     "page_number": ev.page_number,
                     "evidence_text": ev.evidence_text,
                     "bbox": [ev.bbox_x0, ev.bbox_y0, ev.bbox_x1, ev.bbox_y1] if ev and ev.bbox_x0 is not None else None,
-                    "char_confidence": ev.char_confidence if ev else None
+                    "char_confidence": ev.char_confidence if ev else None,
+                    "is_located": getattr(ev, "is_located", True) if ev else False,
+                    "quads": getattr(ev, "quads", None) if ev else None
                 } if ev else None
             })
 
@@ -238,7 +242,8 @@ def get_document_detail(doc_id: str, db: Session = Depends(get_db)):
             "method_id": latest_run.method_id,
             "duration_ms": latest_run.duration_ms,
             "cost_usd": latest_run.calculated_cost_usd,
-            "status": latest_run.status
+            "status": latest_run.status,
+            "is_mock": bool(latest_run.raw_response.get("metadata", {}).get("is_mock", False)) if latest_run and latest_run.raw_response and isinstance(latest_run.raw_response, dict) else False
         } if latest_run else None,
         "fields": fields_data,
         "validations": validation_data,

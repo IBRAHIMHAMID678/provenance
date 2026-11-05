@@ -26,6 +26,58 @@ class LLMExtractionAdapter(BaseExtractionAdapter):
         else:
             return True, "Mock LLM Provider active (zero external API keys set; deterministic tests enabled)."
 
+    def _locate_evidence(
+        self,
+        doc: fitz.Document,
+        value: str
+    ) -> Tuple[bool, int, Optional[Tuple[float, float, float, float]], str, Optional[List[List[float]]]]:
+        """
+        Locates the exact source span in the document text layer using PyMuPDF page.search_for() across all pages.
+        Returns (is_located, 1_indexed_page_num, (nx0, ny0, nx1, ny1), snippet, quads).
+        """
+        if not value or not str(value).strip():
+            return False, 1, None, "Empty value", None
+
+        clean_val = str(value).strip()
+        candidates = [clean_val]
+        # Strip leading currency symbols if any
+        no_curr = re.sub(r"^[$€£¥]\s*", "", clean_val).strip()
+        if no_curr and no_curr != clean_val:
+            candidates.append(no_curr)
+        if "," in no_curr:
+            candidates.append(no_curr.replace(",", ""))
+
+        for page_idx in range(len(doc)):
+            page = doc[page_idx]
+            pw = page.rect.width if page.rect.width > 0 else 612.0
+            ph = page.rect.height if page.rect.height > 0 else 792.0
+
+            for cand in candidates:
+                if len(cand) < 2:
+                    continue
+                rects = page.search_for(cand)
+                if rects:
+                    r = rects[0]
+                    nx0 = round((r.x0 / pw) * 1000.0, 1)
+                    ny0 = round((r.y0 / ph) * 1000.0, 1)
+                    nx1 = round((r.x1 / pw) * 1000.0, 1)
+                    ny1 = round((r.y1 / ph) * 1000.0, 1)
+
+                    quads = page.search_for(cand, quads=True)
+                    quad_pts = None
+                    if quads:
+                        q = quads[0]
+                        quad_pts = [
+                            [round((q.ul.x / pw) * 1000.0, 1), round((q.ul.y / ph) * 1000.0, 1)],
+                            [round((q.ur.x / pw) * 1000.0, 1), round((q.ur.y / ph) * 1000.0, 1)],
+                            [round((q.lr.x / pw) * 1000.0, 1), round((q.lr.y / ph) * 1000.0, 1)],
+                            [round((q.ll.x / pw) * 1000.0, 1), round((q.ll.y / ph) * 1000.0, 1)]
+                        ]
+                    snippet = f"Page {page_idx + 1}: '{cand}' located in document text layer"
+                    return True, page_idx + 1, (nx0, ny0, nx1, ny1), snippet, quad_pts
+
+        return False, 1, None, f"Source span '{clean_val}' not located in document text layer", None
+
     def _extract_document_text(self, pdf_path: str) -> str:
         doc = fitz.open(pdf_path)
         full_text = ""
@@ -33,6 +85,14 @@ class LLMExtractionAdapter(BaseExtractionAdapter):
             full_text += f"\n--- PAGE {page_idx + 1} ---\n" + doc[page_idx].get_text("text")
         doc.close()
         return full_text
+
+    def _extract_page_chunks(self, pdf_path: str) -> List[Tuple[int, str]]:
+        doc = fitz.open(pdf_path)
+        chunks = []
+        for page_idx in range(len(doc)):
+            chunks.append((page_idx + 1, doc[page_idx].get_text("text")))
+        doc.close()
+        return chunks
 
     def _execute_mock_llm(self, text: str, schema: DocumentSchemaDefinition) -> Tuple[Dict[str, Any], int, int]:
         """
@@ -126,7 +186,9 @@ class LLMExtractionAdapter(BaseExtractionAdapter):
                     warnings.append(f"Live LLM request failed ({str(live_err)}). Falling back to deterministic [MOCK_PROVIDER].")
                     raw_extracted_dict, prompt_tokens, completion_tokens = self._execute_mock_llm(document_text, schema)
 
-            # Map raw dictionary to ExtractedFieldItems
+            doc = fitz.open(pdf_path)
+
+            # Map raw dictionary to ExtractedFieldItems with real evidence localization
             for fdef in schema.fields:
                 fn = fdef.name
                 val = raw_extracted_dict.get(fn)
@@ -142,22 +204,78 @@ class LLMExtractionAdapter(BaseExtractionAdapter):
                     else:
                         norm_val = raw_str
 
+                    # Locate real source span across all pages in document
+                    is_located, p_num, bbox, snippet, quad_pts = self._locate_evidence(doc, raw_str)
+
+                    # Dynamic confidence signals (Phase 2):
+                    # 1. Base LLM path confidence = 0.60
+                    # 2. +0.25 if value found via search_for()
+                    # 3. +0.10 if value passes type/format validation
+                    # 4. +0.15 if value agrees with native extraction
+                    # 5. -0.20 if field is critical and unvalidated
+                    signals = {"base": 0.60}
+                    conf = 0.60
+                    if is_located:
+                        conf += 0.25
+                        signals["evidence_located"] = 0.25
+                    else:
+                        signals["evidence_unlocated"] = 0.0
+
+                    # Validate format
+                    type_valid = True
+                    if fdef.data_type in ("decimal", "currency"):
+                        try:
+                            float(re.sub(r"[^\d.-]", "", raw_str))
+                        except Exception:
+                            type_valid = False
+                    elif fdef.data_type == "date":
+                        type_valid = bool(re.search(r"\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{4}|\w+\s+\d{1,2},?\s+\d{4}", raw_str))
+
+                    if type_valid:
+                        conf += 0.10
+                        signals["format_rule_passed"] = 0.10
+                    elif fdef.is_critical:
+                        conf -= 0.20
+                        signals["critical_unvalidated_penalty"] = -0.20
+
+                    # Check agreement with native regex extraction for this field
+                    mock_dict, _, _ = self._execute_mock_llm(document_text, schema)
+                    native_candidate = mock_dict.get(fn)
+                    if native_candidate and (str(native_candidate).strip().lower() == raw_str.lower() or str(native_candidate).strip().lower() in raw_str.lower()):
+                        conf += 0.15
+                        signals["native_consensus_agreement"] = 0.15
+
+                    final_conf = max(0.0, min(0.99, round(conf, 2)))
+
+                    needs_rev = (
+                        (not is_located) or 
+                        (final_conf < settings.ROUTER_REVIEW_CONFIDENCE_THRESHOLD) or 
+                        (fdef.is_critical and final_conf < 0.90)
+                    )
+
                     extracted_fields.append(ExtractedFieldItem(
                         field_name=fn,
                         raw_value=raw_str,
                         normalized_value=norm_val,
                         data_type=fdef.data_type,
                         state="extracted",
-                        confidence=0.92,
+                        confidence=final_conf,
                         is_critical=fdef.is_critical,
-                        needs_review=False
+                        needs_review=needs_rev,
+                        evidence_located=is_located,
+                        confidence_signals=signals
                     ))
                     evidence_list.append(EvidenceItem(
                         field_name=fn,
-                        page_number=1,
-                        evidence_text=f"LLM Context match: '{raw_str}'",
-                        bbox_x0=100.0, bbox_y0=100.0, bbox_x1=500.0, bbox_y1=140.0,
-                        char_confidence=0.90
+                        page_number=p_num,
+                        evidence_text=snippet,
+                        bbox_x0=bbox[0] if bbox else None,
+                        bbox_y0=bbox[1] if bbox else None,
+                        bbox_x1=bbox[2] if bbox else None,
+                        bbox_y1=bbox[3] if bbox else None,
+                        char_confidence=final_conf,
+                        is_located=is_located,
+                        quads=quad_pts
                     ))
                 else:
                     extracted_fields.append(ExtractedFieldItem(
@@ -168,8 +286,12 @@ class LLMExtractionAdapter(BaseExtractionAdapter):
                         state="missing",
                         confidence=0.0,
                         is_critical=fdef.is_critical,
-                        needs_review=fdef.is_required
+                        needs_review=fdef.is_required,
+                        evidence_located=False,
+                        confidence_signals={"state": "missing"}
                     ))
+
+            doc.close()
 
         except Exception as e:
             errors.append(f"LLM extraction failure: {str(e)}")
@@ -196,7 +318,14 @@ class LLMExtractionAdapter(BaseExtractionAdapter):
             input_tokens=prompt_tokens,
             output_tokens=completion_tokens,
             calculated_cost_usd=round(calc_cost, 6),
-            metadata={"is_mock": is_mock, "model": settings.DEFAULT_LLM_MODEL}
+            metadata={
+                "is_mock": is_mock,
+                "model": (
+                    settings.DEFAULT_LLM_MODEL
+                    if not is_mock and settings.DEFAULT_LLM_MODEL != "mock-insurance-extractor-v1"
+                    else ("mock-regex-extractor" if is_mock else settings.DEFAULT_LLM_MODEL)
+                )
+            }
         )
 
 llm_adapter = LLMExtractionAdapter()
