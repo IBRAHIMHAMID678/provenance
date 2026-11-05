@@ -39,12 +39,22 @@ class Settings(BaseSettings):
     TESSERACT_PATH: str = "C:/Program Files/Tesseract-OCR/tesseract.exe"
     ENABLE_PADDLE_OCR: bool = True
 
-    # LLM Providers
+    # LLM Providers & Timeouts
     GROQ_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     DEFAULT_LLM_MODEL: str = "mock-insurance-extractor-v1"
     DEFAULT_VISION_MODEL: str = "mock-vision-extractor-v1"
+    LLM_REQUEST_TIMEOUT_SECONDS: int = 30
+    PER_DOCUMENT_COST_CEILING_USD: float = 0.50
+
+    # Real published pricing per million tokens (USD)
+    GROQ_INPUT_TOKEN_PRICE_PER_M: float = 0.59      # llama-3.3-70b-versatile
+    GROQ_OUTPUT_TOKEN_PRICE_PER_M: float = 0.79
+    OPENAI_INPUT_TOKEN_PRICE_PER_M: float = 0.15    # gpt-4o-mini
+    OPENAI_OUTPUT_TOKEN_PRICE_PER_M: float = 0.60
+    GEMINI_INPUT_TOKEN_PRICE_PER_M: float = 0.075   # gemini-1.5-flash
+    GEMINI_OUTPUT_TOKEN_PRICE_PER_M: float = 0.30
 
     # Cost accounting assumptions
     HUMAN_REVIEWER_HOURLY_RATE: float = 35.00
