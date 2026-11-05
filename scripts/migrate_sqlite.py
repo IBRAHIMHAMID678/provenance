@@ -9,7 +9,9 @@ if os.path.exists(db_path):
         ("extracted_fields", "evidence_located", "BOOLEAN DEFAULT 1"),
         ("extracted_fields", "confidence_signals", "TEXT DEFAULT '{}'"),
         ("field_evidence", "is_located", "BOOLEAN DEFAULT 1"),
-        ("field_evidence", "quads", "TEXT")
+        ("field_evidence", "quads", "TEXT"),
+        ("evaluation_results", "mismatch_rate", "FLOAT DEFAULT 0.0"),
+        ("evaluation_results", "cost_basis", "VARCHAR(30) DEFAULT 'modeled'")
     ]
     for table, col, col_type in columns_to_add:
         try:

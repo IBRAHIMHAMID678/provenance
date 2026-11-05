@@ -124,6 +124,8 @@ def execute_experiment_run(
             document_level_accuracy=summary.document_level_accuracy,
             completeness=summary.completeness,
             hallucination_rate=summary.hallucination_rate,
+            mismatch_rate=summary.mismatch_rate,
+            cost_basis=summary.cost_basis,
             human_review_rate=summary.human_review_rate,
             first_pass_acceptance_rate=1.0 - summary.human_review_rate,
             p50_latency_ms=summary.p50_latency_ms,

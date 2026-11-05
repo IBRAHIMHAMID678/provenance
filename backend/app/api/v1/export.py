@@ -96,7 +96,7 @@ def export_evaluation_csv(db: Session = Depends(get_db)):
     writer = csv.writer(output)
     writer.writerow([
         "ID", "Method", "Exact Accuracy", "Normalized Accuracy", "Critical Field Accuracy", 
-        "Document Level Accuracy", "Completeness", "Hallucination Rate", "P50 Latency (ms)", 
+        "Document Level Accuracy", "Completeness", "Hallucination Rate", "Mismatch Rate", "Cost Basis", "P50 Latency (ms)", 
         "Cost per Correct Field ($)", "Total Machine Cost ($)", "Timestamp"
     ])
 
@@ -110,6 +110,8 @@ def export_evaluation_csv(db: Session = Depends(get_db)):
             e.document_level_accuracy,
             e.completeness,
             e.hallucination_rate,
+            getattr(e, "mismatch_rate", 0.0),
+            getattr(e, "cost_basis", "modeled") or "modeled",
             e.p50_latency_ms,
             e.cost_per_correct_field,
             e.total_machine_cost,
