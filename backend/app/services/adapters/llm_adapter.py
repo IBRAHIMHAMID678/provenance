@@ -183,6 +183,8 @@ class LLMExtractionAdapter(BaseExtractionAdapter):
 
         # Sanitize against prompt injection delimiter collision (Phase 6)
         safe_text = page_text.replace("<<<DOCUMENT_CONTENT_START>>>", "").replace("<<<DOCUMENT_CONTENT_END>>>", "")
+        for token_marker in ("<|im_start|>", "<|im_end|>", "[INST]", "[/INST]", "<SYS>", "</SYS>", "```json", "```"):
+            safe_text = safe_text.replace(token_marker, " ")
         
         prompt = (
             "You are an expert insurance document extraction system. Extract structured entities conforming strictly to the JSON schema below.\n"

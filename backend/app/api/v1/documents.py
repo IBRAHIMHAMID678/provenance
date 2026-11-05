@@ -1,6 +1,8 @@
 import os
+import re
 from pathlib import Path
 from typing import List, Optional
+import fitz
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
@@ -21,11 +23,25 @@ async def upload_document(
     auto_process: bool = Form(True),
     db: Session = Depends(get_db)
 ):
+    # Phase 6 Security Validation: Filename sanitization & path traversal defense
+    raw_filename = file.filename or "uploaded.pdf"
+    # Strip directory traversal characters, null bytes, and path separators
+    clean_filename = Path(raw_filename.replace("\\", "/")).name
+    clean_filename = re.sub(r'[\x00/\\:*?"<>|]', '_', clean_filename)
+    if not clean_filename or clean_filename.strip() in (".", ".."):
+        clean_filename = "uploaded.pdf"
+    orig_name = clean_filename
+
     # Validation 1: Extension & MIME
-    orig_name = os.path.basename(file.filename or "uploaded.pdf")
     ext = os.path.splitext(orig_name)[1].lower()
     if ext != ".pdf":
         raise HTTPException(status_code=400, detail="Only PDF documents are supported.")
+
+    if file.content_type:
+        mime = file.content_type.lower().strip()
+        allowed_mimes = ("application/pdf", "application/x-pdf", "application/octet-stream", "binary/octet-stream")
+        if mime not in allowed_mimes:
+            raise HTTPException(status_code=400, detail=f"Invalid MIME type: {file.content_type}. Only application/pdf is accepted.")
 
     content = await file.read()
     if len(content) == 0:
@@ -33,9 +49,28 @@ async def upload_document(
     if len(content) > (settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024):
         raise HTTPException(status_code=400, detail=f"File exceeds limit of {settings.MAX_UPLOAD_SIZE_MB}MB.")
 
-    # Validation 2: PDF Header Magic Bytes
+    # Validation 2: PDF Header Magic Bytes (%PDF-)
     if not content.startswith(b"%PDF-"):
         raise HTTPException(status_code=400, detail="Malformed PDF header; file does not match PDF signature.")
+
+    # Validation 3: PDF Structure, Encryption, and Page Limit
+    try:
+        pdf_doc = fitz.open(stream=content, filetype="pdf")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Corrupted or unreadable PDF: {str(e)}")
+
+    try:
+        if pdf_doc.is_encrypted or pdf_doc.needs_pass:
+            raise HTTPException(status_code=400, detail="Encrypted or password-protected PDFs are not supported.")
+        
+        page_count = len(pdf_doc)
+        if page_count > settings.MAX_PAGE_COUNT:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Document exceeds maximum page limit of {settings.MAX_PAGE_COUNT} pages (found {page_count})."
+            )
+    finally:
+        pdf_doc.close()
 
     # Workspace resolution
     ws = db.query(Workspace).filter_by(slug=workspace_slug).first()
