@@ -1,211 +1,383 @@
-import random
 import os
-from datetime import datetime, timedelta
-from typing import Dict, Any, Tuple, List
-from pathlib import Path
+import random
+from typing import Dict, Any, List, Optional
+import fitz
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from app.services.ground_truth import REFERENCE_DOCUMENTS, get_ground_truth_by_id
 
 class SyntheticDocumentGenerator:
-    CLAIMANTS = ["Arthur Pendelton", "Elena Rostova", "Marcus Vance", "Sophia Al-Mansoor", "David K. Chen"]
-    INSURERS = ["Apex Global Insurance", "Sentinel Casualty Co.", "Meridian Mutual Group", "Harbor Indemnity"]
-    VENDORS = ["Precision Auto Collision Center", "Metropolitan Health Services", "Apex Bio-Clean Restoration"]
-    PROCEDURES = [
-        ("Diagnostic Cervical Spine CT", "72125", 850.00),
-        ("Orthopedic Specialist Consultation", "99204", 320.00),
-        ("Post-Trauma Physical Therapy Session", "97110", 175.00)
-    ]
+    """
+    Renders realistic synthetic insurance documents strictly by consuming
+    verified ground truth specifications from ground_truth.py.
+    """
 
     @classmethod
-    def generate_claim_form(cls, output_path: str, seed: int = 100) -> Dict[str, Any]:
-        random.seed(seed)
-        claim_id = f"CLM-2026-{random.randint(10000, 99999)}"
-        policy_num = f"POL-{random.randint(500000, 999999)}"
-        claimant = random.choice(cls.CLAIMANTS)
-        insurer = random.choice(cls.INSURERS)
-        
-        inc_date = (datetime(2026, 1, 1) + timedelta(days=random.randint(10, 60))).strftime("%Y-%m-%d")
-        filing_date = (datetime.strptime(inc_date, "%Y-%m-%d") + timedelta(days=random.randint(2, 10))).strftime("%Y-%m-%d")
-        amount = round(random.uniform(2500.0, 18500.0), 2)
+    def render_from_spec(cls, spec: Dict[str, Any], output_path: str) -> Dict[str, Any]:
+        """
+        Renders a PDF strictly following the given reference specification.
+        """
+        gt = spec["ground_truth"]
+        doc_type = spec["doc_type"]
+        layout = spec.get("layout", "table_grid")
+        pages = spec.get("pages", 1)
+        is_scan = spec.get("is_scan", False)
+        skew_deg = spec.get("skew_deg", 1.5)
+        dpi = spec.get("dpi", 130)
 
-        doc = SimpleDocTemplate(output_path, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
+        # Temporary clean PDF path before rasterization/scan degradation if needed
+        clean_pdf_path = output_path if not is_scan else output_path + ".clean.pdf"
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+        doc = SimpleDocTemplate(
+            clean_pdf_path,
+            pagesize=letter,
+            rightMargin=36,
+            leftMargin=36,
+            topMargin=36,
+            bottomMargin=36
+        )
         styles = getSampleStyleSheet()
-        
+
         title_style = ParagraphStyle(
-            'DocTitle', parent=styles['Heading1'], fontSize=18, leading=22, textColor=colors.HexColor("#1A202C")
+            'DocTitle', parent=styles['Heading1'], fontSize=16, leading=20, textColor=colors.HexColor("#0F172A")
         )
-        notice_style = ParagraphStyle(
-            'Notice', parent=styles['Normal'], fontSize=8, leading=10, textColor=colors.HexColor("#718096")
+        subtitle_style = ParagraphStyle(
+            'SubTitle', parent=styles['Normal'], fontSize=9, leading=12, textColor=colors.HexColor("#64748B")
+        )
+        body_style = ParagraphStyle(
+            'Body', parent=styles['Normal'], fontSize=9, leading=13, textColor=colors.HexColor("#1E293B")
         )
 
-        elements = [
-            Paragraph("<b>INSURANCE CLAIM FORM</b>", title_style),
-            Paragraph("<i>[SYNTHETIC TEST DOCUMENT - GENERATED FOR INTELLIGENCE LAB BENCHMARK]</i>", notice_style),
-            Spacer(1, 15)
-        ]
+        elements = []
 
-        data = [
-            ["Claim ID / Reference:", claim_id, "Policy Number:", policy_num],
-            ["Claimant Full Name:", claimant, "Underwriting Insurer:", insurer],
-            ["Date of Loss / Incident:", inc_date, "Claim Filing Date:", filing_date],
-            ["Incident Location:", "402 Industrial Pkwy, Sector 4", "Damage Category:", "Property / Structural Impact"],
-            ["Total Claimed Amount:", f"${amount:,.2f}", "Currency:", "USD"],
-            ["Claim Status:", "Under Investigation", "Investigator ID:", "ADJ-8821"]
-        ]
+        # --- PAGE 1 CONTENT ---
+        if doc_type == "claim_form":
+            elements.append(Paragraph(f"<b>FIRST NOTICE OF LOSS / CLAIM REPORT</b>", title_style))
+            elements.append(Paragraph(f"<i>Underwriting Insurer: {gt.get('insurer_name', 'Apex Global Insurance')}</i>", subtitle_style))
+            elements.append(Spacer(1, 12))
 
-        t = Table(data, colWidths=[130, 140, 130, 140])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#F7FAFC")),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor("#2D3748")),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ]))
-        elements.append(t)
-        elements.append(Spacer(1, 20))
+            if layout in ("table_grid", "noisy_background"):
+                data = [
+                    ["Claim ID:", gt.get("claim_id", ""), "Policy Number:", gt.get("policy_number", "")],
+                    ["Claimant Name:", gt.get("claimant_name", ""), "Insurer Name:", gt.get("insurer_name", "")],
+                    ["Incident Date:", gt.get("incident_date", ""), "Filing Date:", gt.get("filing_date", "")],
+                    ["Incident Location:", gt.get("incident_location", "Main Logistics Yard"), "Coverage:", gt.get("coverage_type", "Commercial Property")]
+                ]
+                # If single page, keep requested_amount on page 1
+                if pages == 1:
+                    data.append(["Requested Amount:", f"${float(gt.get('requested_amount', 0)):,.2f}", "Currency:", gt.get("currency", "USD")])
+                    data.append(["Claim Status:", gt.get("claim_status", "Active"), "Damage Category:", gt.get("damage_type", "Structural")])
 
-        narrative = (
-            f"STATEMENT OF LOSS: On {inc_date}, severe structural damage was sustained at the insured premises. "
-            f"The claimant, {claimant}, reported direct impact requiring emergency stabilization and restorative repairs. "
-            f"Total estimated restorative indemnification requested is ${amount:,.2f} USD under policy {policy_num}."
-        )
-        elements.append(Paragraph("<b>Loss Description & Circumstances:</b>", styles['Heading3']))
-        elements.append(Paragraph(narrative, styles['Normal']))
+                t = Table(data, colWidths=[120, 150, 120, 150])
+                bg_color = colors.HexColor("#F1F5F9") if layout != "noisy_background" else colors.HexColor("#E2E8F0")
+                t.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), bg_color),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 9),
+                    ('PADDING', (0, 0), (-1, -1), 5),
+                ]))
+                elements.append(t)
+
+            elif layout == "two_column":
+                data = [
+                    ["Claim Reference:", gt.get("claim_id", ""), "Policy ID:", gt.get("policy_number", "")],
+                    ["Insured Claimant:", gt.get("claimant_name", ""), "Primary Insurer:", gt.get("insurer_name", "")],
+                    ["Loss Incident Date:", gt.get("incident_date", ""), "Date Reported:", gt.get("filing_date", "")]
+                ]
+                if pages == 1:
+                    data.append(["Claimed Amount:", f"${float(gt.get('requested_amount', 0)):,.2f}", "Currency Code:", gt.get("currency", "USD")])
+                    data.append(["Status:", gt.get("claim_status", "Open"), "Loss Category:", gt.get("damage_type", "Impact")])
+
+                t = Table(data, colWidths=[130, 140, 130, 140])
+                t.setStyle(TableStyle([
+                    ('LINEBELOW', (0, 0), (-1, -1), 0.5, colors.HexColor("#94A3B8")),
+                    ('FONTSIZE', (0, 0), (-1, -1), 9),
+                    ('PADDING', (0, 0), (-1, -1), 6)
+                ]))
+                elements.append(t)
+
+            elif layout == "alternate_labels":
+                data = [
+                    ["Reference Number:", gt.get("claim_id", ""), "Policy Contract #:", gt.get("policy_number", "")],
+                    ["Named Insured:", gt.get("claimant_name", ""), "Underwriter:", gt.get("insurer_name", "")],
+                    ["Date of Loss:", gt.get("incident_date", ""), "Notification Date:", gt.get("filing_date", "")]
+                ]
+                if pages == 1:
+                    data.append(["Total Indemnity Claimed:", f"${float(gt.get('requested_amount', 0)):,.2f}", "Currency:", gt.get("currency", "USD")])
+                    data.append(["Adjudication State:", gt.get("claim_status", "Pending"), "Classification:", gt.get("damage_type", "Water")])
+
+                t = Table(data, colWidths=[140, 130, 140, 130])
+                t.setStyle(TableStyle([
+                    ('BOX', (0, 0), (-1, -1), 1, colors.HexColor("#475569")),
+                    ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+                    ('FONTSIZE', (0, 0), (-1, -1), 9),
+                    ('PADDING', (0, 0), (-1, -1), 5)
+                ]))
+                elements.append(t)
+
+            elif layout == "paragraph_narrative":
+                narrative_p1 = (
+                    f"FORMAL LOSS REPORT: This document certifies that under Policy Number {gt.get('policy_number')}, "
+                    f"a claim designated as Claim ID {gt.get('claim_id')} has been filed by claimant {gt.get('claimant_name')}. "
+                    f"The incident occurred on {gt.get('incident_date')} at {gt.get('incident_location', 'Premises')}, "
+                    f"and notice was submitted on {gt.get('filing_date')} to {gt.get('insurer_name')}."
+                )
+                elements.append(Paragraph(narrative_p1, body_style))
+                elements.append(Spacer(1, 10))
+                if pages == 1:
+                    narrative_p1_end = (
+                        f"Financial reconciliation confirms a Total Claimed Amount of ${float(gt.get('requested_amount', 0)):,.2f} {gt.get('currency', 'USD')}. "
+                        f"The claim status is currently {gt.get('claim_status')} regarding damage category: {gt.get('damage_type')}."
+                    )
+                    elements.append(Paragraph(narrative_p1_end, body_style))
+
+            else:  # boxed_header or dense_key_value
+                data = [
+                    ["CLAIM REFERENCE ID", gt.get("claim_id", ""), "POLICY NUMBER", gt.get("policy_number", "")],
+                    ["CLAIMANT FULL NAME", gt.get("claimant_name", ""), "INSURER NAME", gt.get("insurer_name", "")],
+                    ["INCIDENT LOSS DATE", gt.get("incident_date", ""), "FILING DATE", gt.get("filing_date", "")]
+                ]
+                if pages == 1:
+                    data.append(["CLAIMED AMOUNT", f"${float(gt.get('requested_amount', 0)):,.2f}", "CURRENCY", gt.get("currency", "USD")])
+                    data.append(["STATUS", gt.get("claim_status", ""), "DAMAGE TYPE", gt.get("damage_type", "")])
+
+                t = Table(data, colWidths=[130, 140, 130, 140])
+                t.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#64748B")),
+                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 8),
+                    ('PADDING', (0, 0), (-1, -1), 5)
+                ]))
+                elements.append(t)
+
+        elif doc_type == "insurance_invoice":
+            elements.append(Paragraph(f"<b>COMMERCIAL REPAIR INVOICE</b>", title_style))
+            elements.append(Paragraph(f"<i>Vendor Service Provider: {gt.get('vendor_name')}</i>", subtitle_style))
+            elements.append(Spacer(1, 12))
+
+            header_data = [
+                ["Invoice Number:", gt.get("invoice_number", ""), "Invoice Date:", gt.get("invoice_date", "")],
+                ["Vendor Name:", gt.get("vendor_name", ""), "Currency:", gt.get("currency", "USD")]
+            ]
+            t_hdr = Table(header_data, colWidths=[120, 150, 120, 150])
+            t_hdr.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+                ('FONTSIZE', (0, 0), (-1, -1), 9),
+                ('PADDING', (0, 0), (-1, -1), 5)
+            ]))
+            elements.append(t_hdr)
+            elements.append(Spacer(1, 15))
+
+            if pages == 1:
+                fin_data = [
+                    ["Subtotal Amount:", f"${float(gt.get('subtotal', 0)):,.2f}"],
+                    ["Tax Amount:", f"${float(gt.get('tax_amount', 0)):,.2f}"],
+                    ["Discount Amount:", f"-${float(gt.get('discount_amount', 0)):,.2f}"],
+                    ["Total Amount Due:", f"${float(gt.get('total_amount', 0)):,.2f}"]
+                ]
+                t_fin = Table(fin_data, colWidths=[180, 150])
+                t_fin.setStyle(TableStyle([
+                    ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+                    ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#F1F5F9")),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#94A3B8")),
+                    ('PADDING', (0, 0), (-1, -1), 6)
+                ]))
+                elements.append(t_fin)
+
+        else:  # policy_schedule
+            elements.append(Paragraph(f"<b>POLICY COVERAGE DECLARATIONS</b>", title_style))
+            elements.append(Paragraph(f"<i>Underwritten by {gt.get('insurer_name')}</i>", subtitle_style))
+            elements.append(Spacer(1, 12))
+
+            pol_data = [
+                ["Policy Number:", gt.get("policy_number", ""), "Underwriting Insurer:", gt.get("insurer_name", "")],
+                ["Named Policyholder:", gt.get("policyholder_name", ""), "Coverage Type:", gt.get("coverage_type", "")],
+                ["Effective Date:", gt.get("effective_date", ""), "Expiration Date:", gt.get("expiration_date", "")]
+            ]
+            if pages == 1:
+                pol_data.append(["Gross Premium Amount:", f"${float(gt.get('premium_amount', 0)):,.2f}", "Currency:", gt.get("currency", "USD")])
+                pol_data.append(["Limit of Liability:", f"${float(gt.get('coverage_limit', 0)):,.2f}", "Deductible Excess:", f"${float(gt.get('deductible', 0)):,.2f}"])
+
+            t_pol = Table(pol_data, colWidths=[130, 140, 130, 140])
+            t_pol.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+                ('FONTSIZE', (0, 0), (-1, -1), 9),
+                ('PADDING', (0, 0), (-1, -1), 5)
+            ]))
+            elements.append(t_pol)
+
+        # --- MULTI-PAGE SPLIT HANDLING (Pages 2 & 3) ---
+        if pages >= 2:
+            elements.append(PageBreak())
+            elements.append(Paragraph(f"<b>SCHEDULE ADDENDUM & SETTLEMENT TERMS (PAGE 2)</b>", title_style))
+            elements.append(Spacer(1, 15))
+
+            if doc_type == "claim_form":
+                data_p2 = [
+                    ["Damage Category / Classification:", gt.get("damage_type", "Structural Property Loss")],
+                    ["Incident Location Specifics:", gt.get("incident_location", "Main Logistics Yard")]
+                ]
+                if pages == 2:
+                    data_p2.append(["Total Requested Amount:", f"${float(gt.get('requested_amount', 0)):,.2f}"])
+                    data_p2.append(["Currency Code:", gt.get("currency", "USD")])
+                    data_p2.append(["Claim Status:", gt.get("claim_status", "Under Investigation")])
+
+                t_p2 = Table(data_p2, colWidths=[200, 260])
+                t_p2.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+                    ('FONTSIZE', (0, 0), (-1, -1), 9),
+                    ('PADDING', (0, 0), (-1, -1), 6)
+                ]))
+                elements.append(t_p2)
+
+            elif doc_type == "insurance_invoice":
+                fin_data_p2 = [
+                    ["Subtotal Amount:", f"${float(gt.get('subtotal', 0)):,.2f}"],
+                    ["Tax Amount:", f"${float(gt.get('tax_amount', 0)):,.2f}"],
+                    ["Discount Amount:", f"-${float(gt.get('discount_amount', 0)):,.2f}"]
+                ]
+                if pages == 2:
+                    fin_data_p2.append(["Total Amount Due:", f"${float(gt.get('total_amount', 0)):,.2f}"])
+
+                t_p2 = Table(fin_data_p2, colWidths=[200, 200])
+                t_p2.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#94A3B8")),
+                    ('PADDING', (0, 0), (-1, -1), 6)
+                ]))
+                elements.append(t_p2)
+
+            else:  # policy_schedule
+                pol_data_p2 = [
+                    ["Gross Premium Amount:", f"${float(gt.get('premium_amount', 0)):,.2f}"],
+                    ["Currency:", gt.get("currency", "USD")]
+                ]
+                if pages == 2:
+                    pol_data_p2.append(["Limit of Liability:", f"${float(gt.get('coverage_limit', 0)):,.2f}"])
+                    pol_data_p2.append(["Deductible Excess:", f"${float(gt.get('deductible', 0)):,.2f}"])
+
+                t_p2 = Table(pol_data_p2, colWidths=[200, 200])
+                t_p2.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+                    ('PADDING', (0, 0), (-1, -1), 6)
+                ]))
+                elements.append(t_p2)
+
+        if pages >= 3:
+            elements.append(PageBreak())
+            elements.append(Paragraph(f"<b>FINAL INDEMNIFICATION APPROVAL (PAGE 3)</b>", title_style))
+            elements.append(Spacer(1, 15))
+
+            if doc_type == "claim_form":
+                data_p3 = [
+                    ["Final Authorized Requested Amount:", f"${float(gt.get('requested_amount', 0)):,.2f}"],
+                    ["Settlement Currency:", gt.get("currency", "USD")],
+                    ["Claim Status Determination:", gt.get("claim_status", "Approved")]
+                ]
+                t_p3 = Table(data_p3, colWidths=[220, 240])
+                t_p3.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#64748B")),
+                    ('PADDING', (0, 0), (-1, -1), 6)
+                ]))
+                elements.append(t_p3)
+
+            elif doc_type == "insurance_invoice":
+                fin_data_p3 = [
+                    ["Final Audited Total Amount Due:", f"${float(gt.get('total_amount', 0)):,.2f}"],
+                    ["Payment Currency:", gt.get("currency", "USD")]
+                ]
+                t_p3 = Table(fin_data_p3, colWidths=[220, 200])
+                t_p3.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#64748B")),
+                    ('PADDING', (0, 0), (-1, -1), 6)
+                ]))
+                elements.append(t_p3)
+
+            else:
+                pol_data_p3 = [
+                    ["Aggregate Limit of Liability:", f"${float(gt.get('coverage_limit', 0)):,.2f}"],
+                    ["Applicable Deductible Excess:", f"${float(gt.get('deductible', 0)):,.2f}"]
+                ]
+                t_p3 = Table(pol_data_p3, colWidths=[220, 200])
+                t_p3.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#64748B")),
+                    ('PADDING', (0, 0), (-1, -1), 6)
+                ]))
+                elements.append(t_p3)
 
         doc.build(elements)
 
-        ground_truth = {
-            "claim_id": claim_id,
-            "policy_number": policy_num,
-            "claimant_name": claimant,
-            "incident_date": inc_date,
-            "filing_date": filing_date,
-            "requested_amount": f"{amount:.2f}",
-            "currency": "USD",
-            "claim_status": "Under Investigation"
-        }
-        return ground_truth
+        # --- DEGRADED SCAN RASTERIZATION & SKEW (if requested) ---
+        if is_scan:
+            cls._apply_scan_degradation(clean_pdf_path, output_path, skew_deg=skew_deg, dpi=dpi)
+            if os.path.exists(clean_pdf_path) and clean_pdf_path != output_path:
+                try:
+                    os.remove(clean_pdf_path)
+                except Exception:
+                    pass
+
+        return gt
+
+    @classmethod
+    def _apply_scan_degradation(cls, src_pdf: str, dst_pdf: str, skew_deg: float = 1.5, dpi: int = 120):
+        """
+        Simulates physical scanning degradation: renders to low-DPI pixmap, applies rotation/skew,
+        and re-saves as an image-based PDF.
+        """
+        import io
+        from PIL import Image
+
+        doc = fitz.open(src_pdf)
+        out_doc = fitz.open()
+
+        for page in doc:
+            pix = page.get_pixmap(dpi=dpi)
+            rect = page.rect
+            new_page = out_doc.new_page(width=rect.width, height=rect.height)
+            
+            # Apply exact sub-degree skew and degradation via PIL
+            pil_img = Image.open(io.BytesIO(pix.tobytes("png")))
+            if abs(skew_deg) > 0.05:
+                pil_img = pil_img.rotate(skew_deg, expand=False, fillcolor="white")
+
+            img_buf = io.BytesIO()
+            pil_img.save(img_buf, format="PNG")
+            new_page.insert_image(rect, stream=img_buf.getvalue(), rotate=0)
+
+        doc.close()
+        out_doc.save(dst_pdf)
+        out_doc.close()
+
+    # Legacy helper wrappers for existing test suites
+    @classmethod
+    def generate_claim_form(cls, output_path: str, seed: int = 100) -> Dict[str, Any]:
+        clean_candidates = [d for d in REFERENCE_DOCUMENTS if d["doc_type"] == "claim_form" and not d.get("is_scan") and d.get("pages", 1) == 1 and d.get("layout") in ("table_grid", "two_column")]
+        if not clean_candidates:
+            clean_candidates = [d for d in REFERENCE_DOCUMENTS if d["doc_type"] == "claim_form" and not d.get("is_scan") and d.get("pages", 1) == 1]
+        spec = clean_candidates[seed % len(clean_candidates)]
+        return cls.render_from_spec(spec, output_path)
 
     @classmethod
     def generate_invoice(cls, output_path: str, seed: int = 200) -> Dict[str, Any]:
-        random.seed(seed)
-        inv_num = f"INV-2026-{random.randint(1000, 9999)}"
-        vendor = random.choice(cls.VENDORS)
-        inv_date = (datetime(2026, 2, 1) + timedelta(days=random.randint(1, 20))).strftime("%Y-%m-%d")
-        due_date = (datetime.strptime(inv_date, "%Y-%m-%d") + timedelta(days=30)).strftime("%Y-%m-%d")
-
-        subtotal = round(random.uniform(1200.0, 6500.0), 2)
-        tax = round(subtotal * 0.08, 2)
-        discount = 50.00
-        total = round(subtotal + tax - discount, 2)
-
-        doc = SimpleDocTemplate(output_path, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
-        styles = getSampleStyleSheet()
-
-        elements = [
-            Paragraph("<b>REPAIR & SERVICE INVOICE</b>", styles['Heading1']),
-            Paragraph("<i>[SYNTHETIC TEST DOCUMENT - RECONCILIATION VERIFICATION]</i>", styles['Normal']),
-            Spacer(1, 15)
-        ]
-
-        header_data = [
-            ["Invoice Number:", inv_num, "Invoice Date:", inv_date],
-            ["Vendor Name:", vendor, "Due Date:", due_date],
-            ["Bill To:", "Apex Global Claims Operations", "Currency:", "USD"]
-        ]
-        t_header = Table(header_data, colWidths=[120, 150, 120, 150])
-        t_header.setStyle(TableStyle([
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E0")),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-            ('TOPPADDING', (0, 0), (-1, -1), 5)
-        ]))
-        elements.append(t_header)
-        elements.append(Spacer(1, 20))
-
-        # Financial breakdown table
-        financial_data = [
-            ["Subtotal Amount:", f"${subtotal:,.2f}"],
-            ["Tax Amount (8%):", f"${tax:,.2f}"],
-            ["Discount Amount:", f"-${discount:,.2f}"],
-            ["Total Amount Due:", f"${total:,.2f}"]
-        ]
-        t_fin = Table(financial_data, colWidths=[200, 150])
-        t_fin.setStyle(TableStyle([
-            ('FONTNAME', (-1, -1), (-1, -1), 'Helvetica-Bold'),
-            ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#EDF2F7")),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#A0AEC0")),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 0), (-1, -1), 6)
-        ]))
-        elements.append(t_fin)
-        doc.build(elements)
-
-        return {
-            "invoice_number": inv_num,
-            "invoice_date": inv_date,
-            "vendor_name": vendor,
-            "subtotal": f"{subtotal:.2f}",
-            "tax_amount": f"{tax:.2f}",
-            "discount_amount": f"{discount:.2f}",
-            "total_amount": f"{total:.2f}",
-            "currency": "USD"
-        }
+        clean_candidates = [d for d in REFERENCE_DOCUMENTS if d["doc_type"] == "insurance_invoice" and not d.get("is_scan") and d.get("pages", 1) == 1 and d.get("layout") in ("table_grid", "two_column")]
+        if not clean_candidates:
+            clean_candidates = [d for d in REFERENCE_DOCUMENTS if d["doc_type"] == "insurance_invoice" and not d.get("is_scan") and d.get("pages", 1) == 1]
+        spec = clean_candidates[seed % len(clean_candidates)]
+        return cls.render_from_spec(spec, output_path)
 
     @classmethod
     def generate_policy_schedule(cls, output_path: str, seed: int = 300) -> Dict[str, Any]:
-        random.seed(seed)
-        pol_num = f"POL-{random.randint(700000, 899999)}"
-        insurer = random.choice(cls.INSURERS)
-        policyholder = random.choice(cls.CLAIMANTS)
-        eff_date = "2026-01-01"
-        exp_date = "2027-01-01"
-        premium = round(random.uniform(1400.0, 4800.0), 2)
-        limit = 1000000.00
-        deductible = 1000.00
-
-        doc = SimpleDocTemplate(output_path, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
-        styles = getSampleStyleSheet()
-
-        elements = [
-            Paragraph("<b>INSURANCE POLICY SCHEDULE</b>", styles['Heading1']),
-            Paragraph("<i>[SYNTHETIC TEST DOCUMENT - GOLD EVALUATION PARTITION]</i>", styles['Normal']),
-            Spacer(1, 15)
-        ]
-
-        data = [
-            ["Policy Number:", pol_num, "Underwriting Insurer:", insurer],
-            ["Named Policyholder:", policyholder, "Coverage Type:", "Commercial Property All-Risk"],
-            ["Effective Date:", eff_date, "Expiration Date:", exp_date],
-            ["Gross Premium Amount:", f"${premium:,.2f}", "Currency:", "USD"],
-            ["Deductible Excess:", f"${deductible:,.2f}", "Limit of Liability:", f"${limit:,.2f}"]
-        ]
-        t = Table(data, colWidths=[130, 140, 130, 140])
-        t.setStyle(TableStyle([
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E0")),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 0), (-1, -1), 6)
-        ]))
-        elements.append(t)
-        doc.build(elements)
-
-        return {
-            "policy_number": pol_num,
-            "insurer_name": insurer,
-            "policyholder_name": policyholder,
-            "effective_date": eff_date,
-            "expiration_date": exp_date,
-            "coverage_type": "Commercial Property All-Risk",
-            "premium_amount": f"{premium:.2f}",
-            "coverage_limit": f"{limit:.2f}",
-            "deductible": f"{deductible:.2f}",
-            "currency": "USD"
-        }
+        clean_candidates = [d for d in REFERENCE_DOCUMENTS if d["doc_type"] == "policy_schedule" and not d.get("is_scan") and d.get("pages", 1) == 1 and d.get("layout") in ("table_grid", "two_column")]
+        if not clean_candidates:
+            clean_candidates = [d for d in REFERENCE_DOCUMENTS if d["doc_type"] == "policy_schedule" and not d.get("is_scan") and d.get("pages", 1) == 1]
+        spec = clean_candidates[seed % len(clean_candidates)]
+        return cls.render_from_spec(spec, output_path)
 
 synthetic_generator = SyntheticDocumentGenerator()
-

@@ -24,6 +24,8 @@ class EvaluationSummary(BaseModel):
     document_level_accuracy: float
     completeness: float
     hallucination_rate: float
+    mismatch_rate: float = 0.0
+    cost_basis: str = "modeled"  # "measured" or "modeled"
     human_review_rate: float
     p50_latency_ms: float
     p90_latency_ms: float
@@ -55,7 +57,9 @@ class EvaluationEngine:
         latencies_ms: List[float],
         machine_cost: float,
         human_review_time_seconds: float = 0.0,
-        reviewed_docs_count: int = 0
+        reviewed_docs_count: int = 0,
+        doc_texts_by_doc: Optional[Dict[str, str]] = None,
+        cost_basis: str = "modeled"
     ) -> EvaluationSummary:
         total_docs = len(ground_truth_by_doc)
         if total_docs == 0:
@@ -70,6 +74,8 @@ class EvaluationEngine:
                 document_level_accuracy=0.0,
                 completeness=0.0,
                 hallucination_rate=0.0,
+                mismatch_rate=0.0,
+                cost_basis=cost_basis,
                 human_review_rate=0.0,
                 p50_latency_ms=0.0,
                 p90_latency_ms=0.0,
@@ -88,17 +94,20 @@ class EvaluationEngine:
         total_critical_correct = 0
         docs_perfect = 0
         hallucinated_fields = 0
+        mismatched_fields = 0
 
         field_stats: Dict[str, Dict[str, int]] = {}
 
         for doc_id, expected_fields in ground_truth_by_doc.items():
             pred_fields = predictions_by_doc.get(doc_id, {})
+            doc_text = (doc_texts_by_doc or {}).get(doc_id, "")
+            norm_doc_text = self._normalize(doc_text)
             all_doc_fields_correct = True
 
             for fname, exp_val in expected_fields.items():
                 total_fields_eval += 1
                 if fname not in field_stats:
-                    field_stats[fname] = {"total": 0, "exact": 0, "normalized": 0, "missing": 0}
+                    field_stats[fname] = {"total": 0, "exact": 0, "normalized": 0, "missing": 0, "hallucinated": 0, "mismatched": 0}
                 field_stats[fname]["total"] += 1
 
                 pred_val = pred_fields.get(fname)
@@ -126,7 +135,23 @@ class EvaluationEngine:
                         total_critical_correct += 1
                 else:
                     all_doc_fields_correct = False
-                    hallucinated_fields += 1
+                    norm_pred = self._normalize(pred_val)
+                    # Distinguish hallucination (invented fact absent from doc) vs mismatch (read error / wrong text)
+                    if norm_doc_text:
+                        if norm_pred in norm_doc_text:
+                            mismatched_fields += 1
+                            field_stats[fname]["mismatched"] += 1
+                        else:
+                            hallucinated_fields += 1
+                            field_stats[fname]["hallucinated"] += 1
+                    else:
+                        all_doc_expected = [self._normalize(v) for v in expected_fields.values()]
+                        if any(norm_pred == ev or norm_pred in ev for ev in all_doc_expected):
+                            mismatched_fields += 1
+                            field_stats[fname]["mismatched"] += 1
+                        else:
+                            hallucinated_fields += 1
+                            field_stats[fname]["hallucinated"] += 1
 
             if all_doc_fields_correct:
                 docs_perfect += 1
@@ -140,6 +165,7 @@ class EvaluationEngine:
         doc_acc = round(docs_perfect / total_docs, 4) if total_docs > 0 else 0.0
         completeness = round(total_extracted / total_fields_eval, 4) if total_fields_eval > 0 else 0.0
         hallucination_rate = round(hallucinated_fields / total_fields_eval, 4) if total_fields_eval > 0 else 0.0
+        mismatch_rate = round(mismatched_fields / total_fields_eval, 4) if total_fields_eval > 0 else 0.0
         review_rate = round(reviewed_docs_count / total_docs, 4) if total_docs > 0 else 0.0
 
         # Latency statistics
@@ -185,6 +211,8 @@ class EvaluationEngine:
             document_level_accuracy=doc_acc,
             completeness=completeness,
             hallucination_rate=hallucination_rate,
+            mismatch_rate=mismatch_rate,
+            cost_basis=cost_basis,
             human_review_rate=review_rate,
             p50_latency_ms=round(p50, 1),
             p90_latency_ms=round(p90, 1),

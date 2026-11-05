@@ -117,8 +117,7 @@ class HybridRouterAdapter(BaseExtractionAdapter):
                     # Native high confidence value preserved
                     merged_fields.append(prim)
                 elif llm_f and llm_f.state == "extracted" and llm_f.raw_value:
-                    # Fill from LLM
-                    llm_f.confidence = 0.88
+                    # Fill from LLM (retaining its dynamic confidence score)
                     merged_fields.append(llm_f)
                 else:
                     merged_fields.append(prim or llm_f)

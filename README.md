@@ -11,7 +11,8 @@
   <img src="https://img.shields.io/badge/Next.js-14.2-black?style=flat&logo=next.js&logoColor=white" alt="Next.js">
   <img src="https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white" alt="Tailwind">
   <img src="https://img.shields.io/badge/OCR-RapidOCR_PP--OCRv4-00F2FE?style=flat" alt="RapidOCR">
-  <img src="https://img.shields.io/badge/Tests-25%2F25_Passed-10B981?style=flat" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-48%2F48_Passed-10B981?style=flat" alt="Tests">
+  <img src="https://img.shields.io/badge/Docker-Production_Ready-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat" alt="License">
 </p>
 
@@ -106,19 +107,18 @@ Rather than optimizing for raw API token costs, Provenance optimizes for **Cost 
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start & Deployment
 
-### Prerequisites
-- Python 3.11+
-- Node.js 18+ (Node 20 recommended)
-
-### 1. Launch Services Directly (Windows)
-Double-click `start_system.bat` in the root folder, or execute:
-```powershell
-.\start_system.bat
+### 1. Docker Compose Deployment (Recommended for Production)
+Spin up the entire stack—PostgreSQL 16, FastAPI backend, and Next.js 14 frontend—with automated schema migrations and healthchecks:
+```bash
+docker compose up -d --build
 ```
+- Frontend UI: `http://localhost:3000`
+- Backend API & OpenAPI Docs: `http://localhost:8000/docs`
+- Healthcheck: `http://localhost:8000/api/health`
 
-### 2. Manual Startup
+### 2. Local Development Startup
 
 #### Backend (FastAPI)
 ```powershell
@@ -139,18 +139,37 @@ npm run start
 
 ---
 
-## 🧪 Testing & Verification
+## 🧪 Testing & Verification Suite
 
-Provenance ships with a comprehensive test suite covering unit, integration, and security layers:
+Provenance ships with a rigorous 48-test verification suite covering unit, integration, security, and hardening guarantees:
 ```powershell
-pytest backend/tests/ -v -p no:cacheprovider
+python -m pytest backend/tests/ -v -p no:cacheprovider
 ```
 
-**Results:** `25 passed, 0 failed in 3.72s (100% pass rate)`
+**Results:** `48 passed, 0 failed in 5.29s (100% pass rate)`
+- `test_hardening.py`: Complete regression suite verifying all Phase 1–8 architectural hardening guarantees.
 - `test_adapters.py`: Native PyMuPDF, RapidOCR, and Adaptive Hybrid router verification.
 - `test_full_workflow_integration.py`: Complete 15-stage workflow from ingestion to human review audit trail.
-- `test_rigorous_security_audit.py`: 10-vector adversarial penetration suite.
-- `test_evaluation.py`: Exact and normalized accuracy calculations with division-by-zero protection.
+- `test_rigorous_security_audit.py`: 10-vector adversarial penetration and input validation suite.
+- `test_security_phase6.py`: Upload magic bytes (%PDF-), MIME verification, size limit, page limit, and prompt injection delimiter defenses.
+- `test_dataset_phase5.py`: 40-document ground truth evaluation verifying partition disjointness, multi-page, and degraded scan coverage.
+- `test_extraction_phase3.py`: Multi-page extraction chunking, page attribution, and per-document cost ceiling enforcement.
+- `test_router_escalation.py`: Verified router escalation for unlocated and low-confidence fields.
+- `test_evaluation.py`: Separation of true hallucination rate vs mismatch rate, and exact/normalized metric calculations.
+
+---
+
+## 🛡️ Production Hardening Milestones (Phases 1–9)
+
+- **Phase 1 — Real Spatial Evidence & Polygon Quads:** PyMuPDF quad polygon search replaces synthetic bounding boxes. Unlocated text spans are explicitly flagged and escalated.
+- **Phase 2 — Dynamic Explainable Confidence:** Confidence is computed from four verifiable signals (base prior, spatial quad hit, schema type validation, native consensus agreement) with router escalation below 0.85.
+- **Phase 3 — Multi-Page Extraction & Schema Validation:** Replaced character truncation with page-by-page chunking, dynamic Pydantic schema validation, and per-document cost ceilings.
+- **Phase 4 — Hallucination vs. Mismatch Separation:** Rigorously separated true hallucinations (invented facts not present in the document text layer) from read mismatches, with transparent `[measured]` vs `[modeled]` cost labeling.
+- **Phase 5 — Diverse 40-Document Ground Truth:** 40+ deterministic ground-truth documents spanning 8 layouts, 13 multi-page forms, and 11 degraded scans with realistic skew and low DPI.
+- **Phase 6 — Server-Side Upload Security:** Enforces magic bytes `%PDF-`, MIME verification, 25MB file size limit, 100-page limit, encrypted PDF rejection, traversal path sanitization, and prompt injection delimiter defenses.
+- **Phase 7 — Docker, Postgres & Alembic Migrations:** Production containerization with unprivileged non-root user, PostgreSQL connection support, and automated Alembic schema migrations.
+- **Phase 8 — Usability & Artyreal Design Aesthetic:** Streamlined 4-link core navigation, collapsible tools menu, centered empty state onboarding, 3-step persistent guided tour, and zero-horizontal-scroll 390px mobile responsiveness.
+- **Phase 9 — Comprehensive Verification & Delivery:** 48/48 green test suite, verified documentation, and clean merge.
 
 ---
 
@@ -160,8 +179,8 @@ The complete engineering documentation is indexed in `docs/`:
 - [`POST_BUILD_AUDIT.md`](docs/POST_BUILD_AUDIT.md) — Severity-ranked defect audit and remediation logs.
 - [`FRONTEND_VISUAL_QA.md`](docs/FRONTEND_VISUAL_QA.md) — Visual QA verification across all 12 views with Edge headless screenshots.
 - [`SECURITY_TEST_REPORT.md`](docs/SECURITY_TEST_REPORT.md) — 10-vector adversarial penetration and input validation audit.
-- [`DATASET_AND_BENCHMARK_REPORT.md`](docs/DATASET_AND_BENCHMARK_REPORT.md) — 30-document ground truth evaluation with zero cross-partition leakage.
-- [`OCR_CAPABILITY_REPORT.md`](docs/OCR_CAPABILITY_REPORT.md) — Empirical 5-document matrix benchmark across digital, scan, low-quality, mixed, and multi-page PDFs.
+- [`DATASET_AND_BENCHMARK_REPORT.md`](docs/DATASET_AND_BENCHMARK_REPORT.md) — Ground truth evaluation with zero cross-partition leakage.
+- [`OCR_CAPABILITY_REPORT.md`](docs/OCR_CAPABILITY_REPORT.md) — Empirical matrix benchmark across digital, scan, low-quality, mixed, and multi-page PDFs.
 - [`REAL_WORKFLOW_TEST_REPORT.md`](docs/REAL_WORKFLOW_TEST_REPORT.md) — 15-stage end-to-end integration test execution audit.
 - [`FIXES_APPLIED.md`](docs/FIXES_APPLIED.md) — Comprehensive technical changelog of all architectural remediations.
 

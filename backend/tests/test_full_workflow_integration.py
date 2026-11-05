@@ -78,6 +78,7 @@ def test_complete_15_step_workflow():
     doc_tasks = [t for t in queue_tasks if t["document_id"] == doc_id]
     
     # If no task was flagged as low confidence automatically, let's target the first extracted field
+    db.expire_all()
     target_field = db.query(ExtractedField).join(ExtractionRun).filter(ExtractionRun.document_id == doc_id).first()
     assert target_field is not None
     

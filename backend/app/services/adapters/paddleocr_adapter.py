@@ -269,8 +269,9 @@ class PaddleOCRAdapter(BaseExtractionAdapter):
                     box = info["box"]
                     conf = info["conf"]
 
-                    # Convert pixel box coordinates to 0-1000 normalized coordinates
+                    # Convert pixel box coordinates to 0-1000 normalized coordinates and quads
                     if box and len(box) >= 4:
+                        quads = [[round((p[0] / info["pix_w"]) * 1000.0, 1), round((p[1] / info["pix_h"]) * 1000.0, 1)] for p in box]
                         xs = [p[0] for p in box]
                         ys = [p[1] for p in box]
                         min_x, max_x = min(xs), max(xs)
@@ -280,6 +281,7 @@ class PaddleOCRAdapter(BaseExtractionAdapter):
                         nx1 = round((max_x / info["pix_w"]) * 1000.0, 1)
                         ny1 = round((max_y / info["pix_h"]) * 1000.0, 1)
                     else:
+                        quads = None
                         nx0 = ny0 = nx1 = ny1 = None
 
                     extracted_fields.append(ExtractedFieldItem(
@@ -290,7 +292,9 @@ class PaddleOCRAdapter(BaseExtractionAdapter):
                         state="extracted",
                         confidence=round(conf, 4),
                         is_critical=fdef.is_critical,
-                        needs_review=(conf < 0.70)
+                        needs_review=(conf < settings.ROUTER_REVIEW_CONFIDENCE_THRESHOLD),
+                        evidence_located=True,
+                        confidence_signals={"ocr_box_confidence": round(conf, 4), "engine": "paddleocr"}
                     ))
 
                     evidence_list.append(EvidenceItem(
@@ -301,7 +305,9 @@ class PaddleOCRAdapter(BaseExtractionAdapter):
                         bbox_y0=ny0,
                         bbox_x1=nx1,
                         bbox_y1=ny1,
-                        char_confidence=round(conf, 4)
+                        char_confidence=round(conf, 4),
+                        is_located=True,
+                        quads=quads
                     ))
                 else:
                     extracted_fields.append(ExtractedFieldItem(
@@ -312,7 +318,9 @@ class PaddleOCRAdapter(BaseExtractionAdapter):
                         state="missing",
                         confidence=0.0,
                         is_critical=fdef.is_critical,
-                        needs_review=fdef.is_required
+                        needs_review=fdef.is_required,
+                        evidence_located=False,
+                        confidence_signals={"reason": "not_detected_in_ocr_pass"}
                     ))
 
         except Exception as e:

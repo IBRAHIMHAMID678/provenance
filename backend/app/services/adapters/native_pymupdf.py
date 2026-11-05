@@ -59,15 +59,15 @@ class NativePyMuPDFAdapter(BaseExtractionAdapter):
             
             patterns = {
                 "claim_id": [
-                    r"(?:claim\s*(?:id|number|#|ref)(?:\s*/\s*reference)?|claim\s*no\.?)[:\s]*(?:\n|\r|\s)+([A-Z0-9-]+)",
-                    r"claim\s*(?:id|number|#|ref)[:\s]+(?:\n|\r|\s)*([A-Z0-9-]+)"
+                    r"(?:claim\s*(?:id|number|#|ref)(?:\s*/\s*reference)?|reference\s*(?:number|id|#)|claim\s*no\.?)[:\s]*(?:\n|\r|\s)+([A-Z0-9-]+)",
+                    r"(?:claim\s*(?:id|number|#|ref|reference)|reference\s*(?:number|id|#))[:\s]+(?:\n|\r|\s)*([A-Z0-9-]+)"
                 ],
                 "policy_number": [
-                    r"policy\s*(?:number|id|#|no\.?)[:\s/]+(?:\n|\r|\s)*([A-Z0-9-]+)"
+                    r"(?:policy\s*(?:number|id|#|no\.?|contract\s*#?)|policy\s*contract)[:\s/]+(?:\n|\r|\s)*([A-Z0-9-]+)"
                 ],
                 "claimant_name": [
-                    r"claimant\s*(?:full\s*)?name[:\s/]+(?:\n|\r|\s)*([A-Za-z\s.'-]+?)(?=\n\n|\r|\n[A-Z]|$)",
-                    r"insured\s*name[:\s/]+(?:\n|\r|\s)*([A-Za-z\s.'-]+?)(?=\n|$)"
+                    r"(?:claimant\s*(?:full\s*)?name|insured\s*name|named\s*insured)[:\s/]+(?:\n|\r|\s)*([A-Za-z\s.'-]+?)(?=\n\n|\r|\n[A-Z]|$)",
+                    r"(?:claimant\s*(?:full\s*)?name|insured\s*name|named\s*insured)[:\s/]+(?:\n|\r|\s)*([A-Za-z\s.'-]+?)(?=\n|$)"
                 ],
                 "policyholder_name": [
                     r"(?:named\s*)?policyholder(?:\s*name)?[:\s/]+(?:\n|\r|\s)*([A-Za-z\s.'-]+?)(?=\n\n|\r|\n[A-Z]|$)",
@@ -82,7 +82,7 @@ class NativePyMuPDFAdapter(BaseExtractionAdapter):
                 ],
                 "filing_date": [
                     r"(?:claim\s*)?filing\s*date[:\s/]+(?:\n|\r|\s)*([0-9\/-]+|\w+\s+\d{1,2},?\s+\d{4})",
-                    r"date\s*reported[:\s/]+(?:\n|\r|\s)*([0-9\/-]+|\w+\s+\d{1,2},?\s+\d{4})"
+                    r"(?:date\s*reported|notification\s*date)[:\s/]+(?:\n|\r|\s)*([0-9\/-]+|\w+\s+\d{1,2},?\s+\d{4})"
                 ],
                 "effective_date": [
                     r"(?:effective|start)\s*date[:\s/]+(?:\n|\r|\s)*([0-9\/-]+|\w+\s+\d{1,2},?\s+\d{4})"
@@ -91,7 +91,8 @@ class NativePyMuPDFAdapter(BaseExtractionAdapter):
                     r"(?:expiration|expiry|end)\s*date[:\s/]+(?:\n|\r|\s)*([0-9\/-]+|\w+\s+\d{1,2},?\s+\d{4})"
                 ],
                 "requested_amount": [
-                    r"(?:total\s*)?(?:requested|claimed)\s*amount[:\s/]+(?:\n|\r|\s)*([$€£]?\s*[\d,]+(?:\.\d{2})?)"
+                    r"(?:total\s*)?(?:requested|claimed)\s*amount[:\s/]+(?:\n|\r|\s)*([$€£]?\s*[\d,]+(?:\.\d{2})?)",
+                    r"(?:total\s*indemnity\s*claimed)[:\s/]+(?:\n|\r|\s)*([$€£]?\s*[\d,]+(?:\.\d{2})?)"
                 ],
                 "premium_amount": [
                     r"(?:gross\s*)?premium\s*(?:amount)?[:\s/]+(?:\n|\r|\s)*([$€£]?\s*[\d,]+(?:\.\d{2})?)"
@@ -150,6 +151,10 @@ class NativePyMuPDFAdapter(BaseExtractionAdapter):
                             raw_val = m.group(1).strip().rstrip(".,;")
                             # Find coordinates using page.search_for
                             rect_matches = page.search_for(raw_val)
+                            if not rect_matches:
+                                no_curr = re.sub(r"^[$€£¥]\s*", "", raw_val).strip()
+                                if no_curr and no_curr != raw_val:
+                                    rect_matches = page.search_for(no_curr)
                             rect = rect_matches[0] if rect_matches else None
                             snippet = page_text[max(0, m.start() - 20): min(len(page_text), m.end() + 40)].replace("\n", " ").strip()
                             extracted_values[fn] = (raw_val, page_num, rect, snippet)
@@ -164,13 +169,29 @@ class NativePyMuPDFAdapter(BaseExtractionAdapter):
                     pw = page.rect.width if page.rect.width > 0 else 612.0
                     ph = page.rect.height if page.rect.height > 0 else 792.0
 
+                    quad_pts = None
                     if rect:
                         nx0 = round((rect.x0 / pw) * 1000.0, 1)
                         ny0 = round((rect.y0 / ph) * 1000.0, 1)
                         nx1 = round((rect.x1 / pw) * 1000.0, 1)
                         ny1 = round((rect.y1 / ph) * 1000.0, 1)
+                        quad_matches = page.search_for(raw_val, quads=True)
+                        if quad_matches:
+                            q = quad_matches[0]
+                            quad_pts = [
+                                [round((q.ul.x / pw) * 1000.0, 1), round((q.ul.y / ph) * 1000.0, 1)],
+                                [round((q.ur.x / pw) * 1000.0, 1), round((q.ur.y / ph) * 1000.0, 1)],
+                                [round((q.lr.x / pw) * 1000.0, 1), round((q.lr.y / ph) * 1000.0, 1)],
+                                [round((q.ll.x / pw) * 1000.0, 1), round((q.ll.y / ph) * 1000.0, 1)]
+                            ]
+                        is_located = True
+                        conf = 0.98
+                        needs_rev = False
                     else:
                         nx0 = ny0 = nx1 = ny1 = None
+                        is_located = False
+                        conf = 0.65
+                        needs_rev = True
 
                     extracted_fields.append(ExtractedFieldItem(
                         field_name=fn,
@@ -178,19 +199,23 @@ class NativePyMuPDFAdapter(BaseExtractionAdapter):
                         normalized_value=norm_val,
                         data_type=fdef.data_type,
                         state="extracted",
-                        confidence=0.98,
+                        confidence=conf,
                         is_critical=fdef.is_critical,
-                        needs_review=False
+                        needs_review=needs_rev,
+                        evidence_located=is_located,
+                        confidence_signals={"base": conf, "evidence_located": is_located}
                     ))
                     evidence_list.append(EvidenceItem(
                         field_name=fn,
                         page_number=p_num,
-                        evidence_text=snippet,
+                        evidence_text=snippet if is_located else f"Span '{raw_val}' not located in text layer",
                         bbox_x0=nx0,
                         bbox_y0=ny0,
                         bbox_x1=nx1,
                         bbox_y1=ny1,
-                        char_confidence=0.99
+                        char_confidence=0.99 if is_located else 0.50,
+                        is_located=is_located,
+                        quads=quad_pts
                     ))
                 else:
                     extracted_fields.append(ExtractedFieldItem(
@@ -201,7 +226,9 @@ class NativePyMuPDFAdapter(BaseExtractionAdapter):
                         state="missing",
                         confidence=0.0,
                         is_critical=fdef.is_critical,
-                        needs_review=fdef.is_required
+                        needs_review=fdef.is_required,
+                        evidence_located=False,
+                        confidence_signals={"state": "missing"}
                     ))
 
             doc.close()
