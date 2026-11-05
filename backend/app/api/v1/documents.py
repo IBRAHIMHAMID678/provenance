@@ -1,6 +1,8 @@
 import os
+import re
 from pathlib import Path
 from typing import List, Optional
+import fitz
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
@@ -21,11 +23,25 @@ async def upload_document(
     auto_process: bool = Form(True),
     db: Session = Depends(get_db)
 ):
+    # Phase 6 Security Validation: Filename sanitization & path traversal defense
+    raw_filename = file.filename or "uploaded.pdf"
+    # Strip directory traversal characters, null bytes, and path separators
+    clean_filename = Path(raw_filename.replace("\\", "/")).name
+    clean_filename = re.sub(r'[\x00/\\:*?"<>|]', '_', clean_filename)
+    if not clean_filename or clean_filename.strip() in (".", ".."):
+        clean_filename = "uploaded.pdf"
+    orig_name = clean_filename
+
     # Validation 1: Extension & MIME
-    orig_name = os.path.basename(file.filename or "uploaded.pdf")
     ext = os.path.splitext(orig_name)[1].lower()
     if ext != ".pdf":
         raise HTTPException(status_code=400, detail="Only PDF documents are supported.")
+
+    if file.content_type:
+        mime = file.content_type.lower().strip()
+        allowed_mimes = ("application/pdf", "application/x-pdf", "application/octet-stream", "binary/octet-stream")
+        if mime not in allowed_mimes:
+            raise HTTPException(status_code=400, detail=f"Invalid MIME type: {file.content_type}. Only application/pdf is accepted.")
 
     content = await file.read()
     if len(content) == 0:
@@ -33,9 +49,28 @@ async def upload_document(
     if len(content) > (settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024):
         raise HTTPException(status_code=400, detail=f"File exceeds limit of {settings.MAX_UPLOAD_SIZE_MB}MB.")
 
-    # Validation 2: PDF Header Magic Bytes
+    # Validation 2: PDF Header Magic Bytes (%PDF-)
     if not content.startswith(b"%PDF-"):
         raise HTTPException(status_code=400, detail="Malformed PDF header; file does not match PDF signature.")
+
+    # Validation 3: PDF Structure, Encryption, and Page Limit
+    try:
+        pdf_doc = fitz.open(stream=content, filetype="pdf")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Corrupted or unreadable PDF: {str(e)}")
+
+    try:
+        if pdf_doc.is_encrypted or pdf_doc.needs_pass:
+            raise HTTPException(status_code=400, detail="Encrypted or password-protected PDFs are not supported.")
+        
+        page_count = len(pdf_doc)
+        if page_count > settings.MAX_PAGE_COUNT:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Document exceeds maximum page limit of {settings.MAX_PAGE_COUNT} pages (found {page_count})."
+            )
+    finally:
+        pdf_doc.close()
 
     # Workspace resolution
     ws = db.query(Workspace).filter_by(slug=workspace_slug).first()
@@ -124,6 +159,7 @@ async def upload_document(
         "document_type": doc.document_type,
         "page_count": doc.page_count,
         "quality_category": doc.quality_category,
+        "is_synthetic": getattr(doc, "is_synthetic", False),
         "status": doc.status,
         "is_duplicate": is_duplicate
     }
@@ -160,6 +196,7 @@ def list_documents(
             "status": d.status,
             "status_message": d.status_message,
             "is_duplicate": d.is_duplicate,
+            "is_synthetic": getattr(d, "is_synthetic", False),
             "created_at": d.created_at.isoformat()
         })
 
@@ -188,11 +225,15 @@ def get_document_detail(doc_id: str, db: Session = Depends(get_db)):
                 "confidence_score": f.confidence_score,
                 "is_critical": f.is_critical,
                 "needs_review": f.needs_review,
+                "evidence_located": getattr(f, "evidence_located", True),
+                "confidence_signals": getattr(f, "confidence_signals", {}) or {},
                 "evidence": {
                     "page_number": ev.page_number,
                     "evidence_text": ev.evidence_text,
                     "bbox": [ev.bbox_x0, ev.bbox_y0, ev.bbox_x1, ev.bbox_y1] if ev and ev.bbox_x0 is not None else None,
-                    "char_confidence": ev.char_confidence if ev else None
+                    "char_confidence": ev.char_confidence if ev else None,
+                    "is_located": getattr(ev, "is_located", True) if ev else False,
+                    "quads": getattr(ev, "quads", None) if ev else None
                 } if ev else None
             })
 
@@ -231,6 +272,7 @@ def get_document_detail(doc_id: str, db: Session = Depends(get_db)):
         "page_count": doc.page_count,
         "document_type": doc.document_type,
         "quality_category": doc.quality_category,
+        "is_synthetic": getattr(doc, "is_synthetic", False),
         "status": doc.status,
         "status_message": doc.status_message,
         "created_at": doc.created_at.isoformat(),
@@ -238,7 +280,8 @@ def get_document_detail(doc_id: str, db: Session = Depends(get_db)):
             "method_id": latest_run.method_id,
             "duration_ms": latest_run.duration_ms,
             "cost_usd": latest_run.calculated_cost_usd,
-            "status": latest_run.status
+            "status": latest_run.status,
+            "is_mock": bool(latest_run.raw_response.get("metadata", {}).get("is_mock", False)) if latest_run and latest_run.raw_response and isinstance(latest_run.raw_response, dict) else False
         } if latest_run else None,
         "fields": fields_data,
         "validations": validation_data,

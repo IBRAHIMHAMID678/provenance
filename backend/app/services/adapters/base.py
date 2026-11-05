@@ -12,6 +12,8 @@ class EvidenceItem(BaseModel):
     bbox_x1: Optional[float] = None
     bbox_y1: Optional[float] = None
     char_confidence: float = 1.0
+    is_located: bool = True
+    quads: Optional[List[List[float]]] = None
 
 class ExtractedFieldItem(BaseModel):
     field_name: str
@@ -22,6 +24,8 @@ class ExtractedFieldItem(BaseModel):
     confidence: float = 1.0
     is_critical: bool = False
     needs_review: bool = False
+    evidence_located: bool = True
+    confidence_signals: Optional[Dict[str, Any]] = None
 
 class ExtractionResult(BaseModel):
     doc_id: str

@@ -45,3 +45,37 @@ def test_evaluation_zero_correct_division_protection():
     assert summary.total_correct_fields == 0
     assert summary.cost_per_correct_field == float("inf")
 
+def test_evaluation_hallucination_vs_mismatch_separation():
+    # Doc text contains "EXPECTED" and "OTHER_TEXT_IN_DOC", but does NOT contain "FABRICATED_GHOST"
+    doc_text = "Claim reference EXPECTED with OTHER_TEXT_IN_DOC noted."
+    
+    preds = {
+        "doc1": {
+            "field_a": "OTHER_TEXT_IN_DOC",  # Mismatch (present in text, but wrong field)
+            "field_b": "FABRICATED_GHOST"     # Hallucination (invented fact, completely absent from text)
+        }
+    }
+    truth = {
+        "doc1": {
+            "field_a": "EXPECTED",
+            "field_b": "EXPECTED_B"
+        }
+    }
+    
+    summary = evaluation_engine.evaluate_run(
+        method_id="llm",
+        predictions_by_doc=preds,
+        ground_truth_by_doc=truth,
+        critical_fields=["field_a"],
+        latencies_ms=[100.0],
+        machine_cost=0.002,
+        doc_texts_by_doc={"doc1": doc_text},
+        cost_basis="measured"
+    )
+    
+    assert summary.total_fields == 2
+    assert summary.cost_basis == "measured"
+    assert summary.hallucination_rate == 0.5  # 1 hallucination out of 2 fields
+    assert summary.mismatch_rate == 0.5       # 1 mismatch out of 2 fields
+
+

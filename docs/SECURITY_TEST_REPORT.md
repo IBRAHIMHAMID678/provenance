@@ -32,15 +32,23 @@ Unlike naive LLM wrappers that paste raw unstructured document text into an open
 1. **Structural Prioritization:** Clean digital documents are processed using deterministic regular expressions and table cell geometry (PyMuPDF Native), which are mathematically immune to prompt injection.
 2. **Schema Containment:** When an LLM adapter is engaged, documents are partitioned by page and evaluated against strict Pydantic JSON schemas. Malicious instructions are treated as literal text values and rejected by schema data type validators (e.g. currency parser rejecting natural language override commands).
 
-### 2.2 Storage Sandboxing on Windows
+### 2.2 Storage Sandboxing on Windows & Container Runtimes
 To comply with the strict requirement that zero data touch C: drive and no arbitrary filesystem traversal occur:
 - `StorageService` computes the SHA-256 hash of all file bytes upon ingestion.
 - The stored file is renamed to `<sha256_hex>.pdf` inside `D:\PDF Extracter\backend\data\uploads`.
 - Even if a malicious user submits a filename like `../../../../Windows/System32/evil.pdf`, the system stores the file as `e35538b049350eeb...pdf` and sanitizes the database metadata.
 - All file download endpoints resolve the absolute path and verify `real_path.startswith(storage_root)`.
 
+### 2.3 Phase 6 Enhanced Ingestion & Parser Hardening
+In Phase 6 of pre-production hardening, additional server-side defenses were implemented and verified with `backend/tests/test_security_phase6.py`:
+1. **Magic Byte Signature Inspection:** Validates that incoming streams begin strictly with `%PDF-`. Files with disguised `.pdf` extensions containing executable, script, or binary content are immediately rejected with HTTP 400.
+2. **Strict MIME Type Sniffing:** Verifies `file.content_type` matches accepted PDF signatures, rejecting non-PDF content types (e.g. `image/png`, `text/html`).
+3. **Max Page Limit Enforced (100 Pages):** In-memory PyMuPDF validation inspects document length before storage, blocking denial-of-service attempts using massive documents exceeding `settings.MAX_PAGE_COUNT` (100 pages).
+4. **Encrypted PDF Rejection:** Checks `doc.is_encrypted` and `doc.needs_pass`. Protected or password-locked documents are rejected with explicit HTTP 400 messages, preventing worker hangs.
+5. **Control Token Stripping in LLM Delimiters:** In addition to XML delimiter wrappers (`<<<DOCUMENT_CONTENT_START>>>`), text streams are stripped of LLM control tokens such as `<|im_start|>`, `<|im_end|>`, `[INST]`, `[/INST]`, `<SYS>`, `</SYS>`, preventing special token hijacking.
+
 ---
 
 ## 3. Security Sign-Off
-All 10 attack vectors have been verified with automated regression tests (`tests/test_rigorous_security_audit.py`). No high- or critical-severity security vulnerabilities remain.
+All 10 attack vectors and the Phase 6 server-side defenses have been verified with automated regression tests (`tests/test_rigorous_security_audit.py` and `tests/test_security_phase6.py`). Zero high- or critical-severity security vulnerabilities remain.
 

@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import List
+import shutil
+from typing import List, Any
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, field_validator
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -21,6 +22,25 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            return [i.strip() for i in v.split(",") if i.strip()]
+        elif isinstance(v, list):
+            return v
+        return ["http://localhost:3000", "http://127.0.0.1:3000"]
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def set_debug_mode(cls, v: Any, info) -> bool:
+        if v is not None:
+            if isinstance(v, str):
+                return v.lower() in ("true", "1", "yes")
+            return bool(v)
+        env_val = info.data.get("ENV", "development") if hasattr(info, "data") else "development"
+        return False if str(env_val).lower() == "production" else True
+
     # Storage paths on D: drive
     STORAGE_ROOT: Path = DATA_DIR
     UPLOADS_DIR: Path = DATA_DIR / "uploads"
@@ -39,12 +59,22 @@ class Settings(BaseSettings):
     TESSERACT_PATH: str = "C:/Program Files/Tesseract-OCR/tesseract.exe"
     ENABLE_PADDLE_OCR: bool = True
 
-    # LLM Providers
+    # LLM Providers & Timeouts
     GROQ_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     DEFAULT_LLM_MODEL: str = "mock-insurance-extractor-v1"
     DEFAULT_VISION_MODEL: str = "mock-vision-extractor-v1"
+    LLM_REQUEST_TIMEOUT_SECONDS: int = 30
+    PER_DOCUMENT_COST_CEILING_USD: float = 0.50
+
+    # Real published pricing per million tokens (USD)
+    GROQ_INPUT_TOKEN_PRICE_PER_M: float = 0.59      # llama-3.3-70b-versatile
+    GROQ_OUTPUT_TOKEN_PRICE_PER_M: float = 0.79
+    OPENAI_INPUT_TOKEN_PRICE_PER_M: float = 0.15    # gpt-4o-mini
+    OPENAI_OUTPUT_TOKEN_PRICE_PER_M: float = 0.60
+    GEMINI_INPUT_TOKEN_PRICE_PER_M: float = 0.075   # gemini-1.5-flash
+    GEMINI_OUTPUT_TOKEN_PRICE_PER_M: float = 0.30
 
     # Cost accounting assumptions
     HUMAN_REVIEWER_HOURLY_RATE: float = 35.00

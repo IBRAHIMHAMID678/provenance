@@ -132,7 +132,9 @@ class BackgroundJobWorker:
                         state=f_item.state,
                         confidence_score=f_item.confidence,
                         is_critical=f_item.is_critical,
-                        needs_review=f_item.needs_review
+                        needs_review=f_item.needs_review or (not f_item.evidence_located),
+                        evidence_located=f_item.evidence_located,
+                        confidence_signals=f_item.confidence_signals or {}
                     )
                     db.add(ef)
                     db.flush()
@@ -148,12 +150,14 @@ class BackgroundJobWorker:
                             bbox_x1=ev.bbox_x1,
                             bbox_y1=ev.bbox_y1,
                             extraction_method=extract_res.method_id,
-                            char_confidence=ev.char_confidence
+                            char_confidence=ev.char_confidence,
+                            is_located=ev.is_located,
+                            quads=ev.quads
                         )
                         db.add(fe)
 
-                    # Trigger review task if critical and low confidence or missing
-                    if (f_item.is_critical and f_item.confidence < 0.85) or (f_item.needs_review):
+                    # Trigger review task if confidence below threshold, unlocated evidence, or flagged
+                    if (f_item.confidence < settings.ROUTER_REVIEW_CONFIDENCE_THRESHOLD) or (f_item.needs_review) or (not f_item.evidence_located):
                         low_confidence_fields.append((ef, f_item))
 
                 # Stage 3: Deterministic Validation
@@ -176,12 +180,17 @@ class BackgroundJobWorker:
 
                 # Stage 4: Create Human Review Tasks if needed
                 for ef_record, f_item in low_confidence_fields:
+                    review_reason = (
+                        "Source evidence span not located in document."
+                        if not f_item.evidence_located
+                        else (f"Confidence below threshold ({f_item.confidence:.2f})" if f_item.raw_value else "Required field is missing.")
+                    )
                     rt = ReviewTask(
                         document_id=doc.id,
                         field_id=ef_record.id,
                         status="pending",
                         priority="high" if f_item.is_critical else "medium",
-                        reason=f"Confidence below threshold ({f_item.confidence:.2f})" if f_item.raw_value else "Required field is missing."
+                        reason=review_reason
                     )
                     db.add(rt)
 

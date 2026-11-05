@@ -87,6 +87,7 @@ export default function EvaluationPage() {
                     <th className="py-3 px-3 font-medium uppercase tracking-wider">Critical Fields</th>
                     <th className="py-3 px-3 font-medium uppercase tracking-wider">Doc-Level</th>
                     <th className="py-3 px-3 font-medium uppercase tracking-wider">Hallucination</th>
+                    <th className="py-3 px-3 font-medium uppercase tracking-wider">Mismatch</th>
                     <th className="py-3 px-3 font-medium uppercase tracking-wider">P50 Latency</th>
                     <th className="py-3 px-4 font-medium uppercase tracking-wider text-right">Cost / Correct Field</th>
                   </tr>
@@ -117,13 +118,23 @@ export default function EvaluationPage() {
                           {(row.hallucination_rate * 100).toFixed(1)}%
                         </Badge>
                       </td>
+                      <td className="py-3.5 px-3">
+                        <Badge variant={(row.mismatch_rate || 0) === 0 ? 'neutral' : 'warning'}>
+                          {((row.mismatch_rate || 0) * 100).toFixed(1)}%
+                        </Badge>
+                      </td>
                       <td className="py-3.5 px-3 text-slate-400 tabular-nums">
                         {row.p50_latency_ms} ms
                       </td>
                       <td className="py-3.5 px-4 text-right">
-                        <span className="font-bold text-sky-400 text-sm tabular-nums">
-                          ${row.cost_per_correct_field.toFixed(5)}
-                        </span>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span className="font-bold text-sky-400 text-sm tabular-nums">
+                            ${row.cost_per_correct_field.toFixed(5)}
+                          </span>
+                          <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-white/[0.06] text-slate-400 border border-white/[0.08]">
+                            {row.cost_basis || 'modeled'}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -143,9 +154,14 @@ export default function EvaluationPage() {
                       {row.method_id} Field Drilldown
                     </h3>
                   </div>
-                  <Badge variant="success">
-                    ${row.cost_per_correct_field.toFixed(4)} / correct field
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="success">
+                      ${row.cost_per_correct_field.toFixed(4)} / correct field
+                    </Badge>
+                    <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-400 border border-white/[0.08]">
+                      {row.cost_basis || 'modeled'}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="space-y-2.5">
