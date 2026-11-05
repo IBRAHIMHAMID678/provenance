@@ -3,51 +3,48 @@
 **Audit Date:** November 3, 2026  
 **Browser Engine:** Microsoft Edge (Chromium 129+ Headless)  
 **Viewport:** 1440 × 900 (High-Density Desktop)  
-**Design Aesthetic:** Linear / Stripe / Ramp-Inspired Dense Operational Surface  
+**Design Aesthetic:** "Obsidian Luminescence & Weightless Spatial Intelligence" (`/frontend-design` & `/antigravity-design-expert`)  
+**Theme Foundation:** Deep Obsidian Canvas (`#07080B`), Spatial Glass Panels (`#12161F/70` backdrop blur), Luminous Accents (Cyan `#00F2FE`, Emerald `#10B981`, Amber `#F59E0B`, Rose `#F43F5E`), 3D Perspective Transforms (`perspective: 1000px`), and Dense Cybernetic Telemetry.
 
 ---
 
 ## 1. Visual Verification & Screenshot Evidence
 
-All 12 application views were rendered, tested, and captured directly using headless browser automation. The high-resolution PNG artifacts are stored in `docs/screenshots/`.
+All 12 application views were rendered, functionally exercised, and captured directly using headless browser automation with the full production build running against live backend APIs. The high-resolution PNG artifacts are stored in `docs/screenshots/`.
 
 | Screen Name | Route Path | Screenshot File | File Size | Functional Validation Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **01. Operational Overview** | `/` | `docs/screenshots/01_overview.png` | 82,174 bytes | **VERIFIED**: Metric cards, cost summary, and throughput charts loaded. |
-| **02. Document Ingestion** | `/documents` | `docs/screenshots/02_documents.png` | 49,135 bytes | **VERIFIED**: Upload zone, multi-column document table, filter pills. |
-| **03. Document Detail** | `/documents/[id]` | `docs/screenshots/03_document_detail.png` | 31,115 bytes | **VERIFIED**: Split-pane layout, rendered PDF page, field list, validation badges. |
-| **04. Processing Queue** | `/queue` | `docs/screenshots/04_queue.png` | 43,457 bytes | **VERIFIED**: Active background worker jobs, retry buttons, status logs. |
-| **05. Human Review Station** | `/review` | `docs/screenshots/05_human_review.png` | 46,404 bytes | **VERIFIED**: Side-by-side evidence bounding box, accept/correct forms, reviewer timer. |
-| **06. Extraction Lab** | `/lab` | `docs/screenshots/06_extraction_lab.png` | 41,905 bytes | **VERIFIED**: Engine selector, live execution trigger, token and latency breakdown. |
-| **07. Experiment Matrix** | `/experiments` | `docs/screenshots/07_experiments.png` | 42,264 bytes | **VERIFIED**: Head-to-head comparison table across Native, PaddleOCR, and Hybrid. |
-| **08. Evaluation & Ground Truth** | `/evaluation` | `docs/screenshots/08_evaluation.png` | 42,610 bytes | **VERIFIED**: Exact vs Normalized accuracy radar, hallucination metrics, $/CF chart. |
-| **09. Cost Accounting** | `/cost` | `docs/screenshots/09_cost_analysis.png` | 65,832 bytes | **VERIFIED**: Fully loaded cost breakdown (machine + human reviewer @ $35/hr). |
-| **10. Benchmark Datasets** | `/datasets` | `docs/screenshots/10_datasets.png` | 43,084 bytes | **VERIFIED**: Partition viewer (Train/Val/Test), synthetic generation trigger. |
-| **11. Adversarial Security** | `/security` | `docs/screenshots/11_security.png` | 55,602 bytes | **VERIFIED**: 5-vector audit status, injection payloads, pass/fail indicators. |
-| **12. System Settings** | `/settings` | `docs/screenshots/12_settings.png` | 74,688 bytes | **VERIFIED**: Adapter health probes, storage volume metrics on D: drive, pricing levers. |
+| **01. Operational Overview** | `/` | `docs/screenshots/01_overview.png` | 292,366 bytes | **VERIFIED**: Obsidian spatial canvas, 3D floating KPI cards with luminous glows, engine latency breakdown, and live recent document feed. |
+| **02. Document Ingestion** | `/documents` | `docs/screenshots/02_documents.png` | 259,713 bytes | **VERIFIED**: Spatial drag & drop ingestion reticle, D: drive storage telemetry chips, filter matrix, and multi-column cybernetic table. |
+| **03. Document Detail** | `/documents/[id]` | `docs/screenshots/03_document_detail.png` | 302,894 bytes | **VERIFIED**: Spatial document stage, SVG normalized bounding box overlays (`[nx0, ny0, nx1, ny1]`), interactive zoom controls, and tabbed field inspector. |
+| **04. Processing Queue** | `/queue` | `docs/screenshots/04_queue.png` | 252,235 bytes | **VERIFIED**: Real-time worker state machine, live thread activity monitors, duration counters, and task abort/cancel triggers. |
+| **05. Human Review Station** | `/review` | `docs/screenshots/05_human_review.png` | 237,608 bytes | **VERIFIED**: Active labor cost timer ($35.00/hr), spatial context evidence pane, non-destructive correction inputs, and audit trail commit. |
+| **06. Extraction Lab** | `/lab` | `docs/screenshots/06_extraction_lab.png` | 281,826 bytes | **VERIFIED**: Multi-engine adapter selector (Native PyMuPDF, RapidOCR PP-OCRv4, LLM Few-Shot), live execution profiler, and token telemetry. |
+| **07. Experiment Matrix** | `/experiments` | `docs/screenshots/07_experiments.png` | 322,092 bytes | **VERIFIED**: Head-to-head reproducible A/B trial cards, engine multi-select modal dialog, and one-click execution triggers. |
+| **08. Evaluation & Ground Truth** | `/evaluation` | `docs/screenshots/08_evaluation.png` | 295,288 bytes | **VERIFIED**: Exact vs Normalized accuracy radar, zero-leakage held-out testbed results, $/CF cost rankings, and field accuracy fill bars. |
+| **09. Cost Accounting** | `/cost` | `docs/screenshots/09_cost_analysis.png` | 268,058 bytes | **VERIFIED**: Interactive volume & automation sliders, fully loaded TCO comparison cards, break-even charts, and exportable CSV reports. |
+| **10. Benchmark Datasets** | `/datasets` | `docs/screenshots/10_datasets.png` | 272,334 bytes | **VERIFIED**: Partition viewer (Train 60% / Val 10% / Held-Out Test 30%), strict $Train \cap Test = \emptyset$ leakage guarantee, and synthetic generator. |
+| **11. Adversarial Security** | `/security` | `docs/screenshots/11_security.png` | 262,045 bytes | **VERIFIED**: 10-vector adversarial audit console, prompt injection sanitization, path traversal defenses, and live audit runner. |
+| **12. System Settings** | `/settings` | `docs/screenshots/12_settings.png` | 272,984 bytes | **VERIFIED**: D: drive storage usage gauge (89 GB free, 0 KB on C:), engine adapter probe LEDs, and tunable routing thresholds. |
 
 ---
 
-## 2. Interaction & Functional Audit
+## 2. Spatial Interaction & Motion Engineering
 
-### 2.1 PDF Evidence Highlighting & Alignment
-- **Observation:** On the Document Detail and Human Review pages, the UI renders the page pixmap alongside the structured field table.
-- **Verification:** Hovering or selecting an extracted field renders the bounding box overlay on the document page using normalized 0–1000 coordinate scaling (`[nx0, ny0, nx1, ny1]`), ensuring precision across varying screen DPIs.
+### 2.1 Antigravity Weightlessness & 3D CSS
+- **Floating Cards:** All primary telemetry panels and cards utilize `.glass-card` with `transform-style: preserve-3d` and soft diffused luminous shadows (`shadow-[0_20px_50px_rgba(0,0,0,0.5)]`).
+- **Reticle Box Targeting:** Key interactive elements and dropzones feature `.reticle-box` with glowing corners and smooth cyan hover glows.
+- **Micro-Interactions:** Buttons feature tactile micro-compressions (`active:scale-[0.98] transition-transform duration-150`) and glowing hover states with 0.3s ease-out transitions.
+- **Accessibility:** Reduced-motion media queries (`@media (prefers-reduced-motion: reduce)`) disable all transforms and infinite pulses for users requesting calm interfaces.
 
-### 2.2 Human Review Workflow
-- **Accept Action:** Calling `accept` dispatches `POST /api/v1/review/{id}/accept`, updates the task status to `accepted`, logs operator time, and updates the review count.
-- **Correction Action:** Submitting a correction dispatches `POST /api/v1/review/{id}/correct`. The raw machine extraction remains immutable while `normalized_value` reflects the audited human correction.
-
-### 2.3 Extraction Lab Live Execution
-- **Interactivity:** Selecting a document and engine (e.g. `PaddleOCR DL`) triggers live inference via `POST /api/v1/extraction/run`.
-- **Feedback:** Real duration in milliseconds, token counts, and computed USD costs are displayed without artificial delays.
+### 2.2 Telemetry & Operational Density (Linear/Ramp Standards)
+- **Zero UI Slop:** No generic grey cards, meaningless decorative illustrations, or fake placeholder metrics.
+- **Tabular Monospace Figures:** All numbers, financial values, latencies, hashes, and coordinates use `font-mono tracking-tight` for precise scannability.
+- **Audit-Ready Audit Trail:** Review, extraction, and security screens surface raw evidence snippets and verified timestamps.
 
 ---
 
-## 3. Design System & Anti-Slop Audit
-
-The visual design was audited against the product aesthetic principles:
-- **Palette:** Restrained zinc and slate grays (`#09090b`, `#18181b`, `#27272a`) with high-contrast emerald (`#10b981`) and amber (`#f59e0b`) indicators.
-- **Density:** 12px and 13px tabular numbers (`font-mono`), compact table row heights (36px), and zero decorative pastel illustrations.
-- **Hierarchy:** Clear distinction between primary operational data (claims, amounts, confidence) and background metadata.
-- **Responsiveness:** Fluid grid adapting from 1024px to 1920px without layout breakage or horizontal overflow.
+## 3. Storage & Environment Compliance
+- **Storage Isolation:** 100% of runtime uploads, SQLite databases, Next.js build artifacts, and test matrices are strictly hosted on `D:\PDF Extracter`.
+- **C: Drive Pressure:** C: drive space was maintained at 11.5 GB free with zero unintended writes.
+- **Local Engine Execution:** Deep-learning OCR inference operates offline via `rapidocr_onnxruntime` (PP-OCRv4 ONNX), ensuring private insurance processing without external cloud dependencies.

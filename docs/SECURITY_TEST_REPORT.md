@@ -43,3 +43,4 @@ To comply with the strict requirement that zero data touch C: drive and no arbit
 
 ## 3. Security Sign-Off
 All 10 attack vectors have been verified with automated regression tests (`tests/test_rigorous_security_audit.py`). No high- or critical-severity security vulnerabilities remain.
+
