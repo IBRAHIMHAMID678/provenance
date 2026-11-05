@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   UserCheck, 
@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   TrendingUp,
   FileText,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ export default function HumanReviewPage() {
   const [correctionNotes, setCorrectionNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const loadQueue = async () => {
     try {
@@ -62,6 +64,48 @@ export default function HumanReviewPage() {
     }, 1000);
     return () => clearInterval(interval);
   }, [selectedTask?.task_id]);
+
+  // Keyboard Navigation: j/k to cycle tasks, Enter to accept, e to focus correction input
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if user is typing inside an input or textarea
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        if (e.key === 'Escape') {
+          target.blur();
+        }
+        return;
+      }
+
+      if (e.key === 'j') {
+        e.preventDefault();
+        if (tasks.length > 0 && selectedTask) {
+          const idx = tasks.findIndex(t => t.task_id === selectedTask.task_id);
+          if (idx < tasks.length - 1) {
+            handleSelectTask(tasks[idx + 1]);
+          }
+        }
+      } else if (e.key === 'k') {
+        e.preventDefault();
+        if (tasks.length > 0 && selectedTask) {
+          const idx = tasks.findIndex(t => t.task_id === selectedTask.task_id);
+          if (idx > 0) {
+            handleSelectTask(tasks[idx - 1]);
+          }
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        handleAccept();
+      } else if (e.key === 'e') {
+        e.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [tasks, selectedTask]);
 
   const handleSelectTask = (task: any) => {
     setSelectedTask(task);
@@ -238,26 +282,109 @@ export default function HumanReviewPage() {
           {/* Adjudication Workbench Column (7 cols) */}
           {selectedTask && (
             <div className="col-span-12 lg:col-span-7">
-              <Card className="p-6 space-y-6">
-                <div className="flex items-center justify-between border-b border-white/[0.07] pb-4">
+              <Card className="p-6 space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.07] pb-4">
                   <div>
                     <span className="text-[10px] font-mono text-sky-400 uppercase tracking-wider font-semibold">Active Review Target</span>
                     <h2 className="text-lg font-bold text-white font-mono">{selectedTask.field_name}</h2>
                   </div>
-                  <Badge variant="warning">
-                    Confidence: {Math.round(selectedTask.confidence_score * 100)}%
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {selectedTask.is_mock && (
+                      <Badge variant="warning" className="border-amber-500/30 bg-amber-500/10 text-amber-300 font-mono text-[10px]">
+                        <AlertTriangle className="w-3 h-3 text-amber-400 mr-1 inline" />
+                        MOCK REGEX ENGINE
+                      </Badge>
+                    )}
+                    <Badge variant={selectedTask.confidence_score >= 0.85 ? 'success' : 'warning'}>
+                      Confidence: {Math.round(selectedTask.confidence_score * 100)}%
+                    </Badge>
+                  </div>
                 </div>
 
-                {/* Evidence Callout */}
-                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-2">
-                  <div className="text-xs font-mono text-slate-400 flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5 text-sky-400" />
-                    <span>Evidence Context (Document: {selectedTask.document_filename})</span>
+                {/* Spatial Reticle / Evidence Stage */}
+                <div className="rounded-xl bg-[#07090E] border border-white/[0.08] overflow-hidden p-4 min-h-[300px] flex flex-col items-center justify-center">
+                  {selectedTask.evidence_located === false || (!selectedTask.bbox && !selectedTask.quads) ? (
+                    <div className="p-6 text-center max-w-sm space-y-2">
+                      <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-400">
+                        <AlertCircle className="w-5 h-5" />
+                      </div>
+                      <div className="text-sm font-semibold text-white font-mono">No Source Span Located</div>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        This value was extracted by the model or heuristic rules but could not be located in the document&apos;s selectable text stream. Visual reticle cannot be anchored.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="relative max-w-full overflow-hidden border border-neutral-700 rounded shadow-lg bg-white">
+                      <img
+                        src={`http://localhost:8000/api/documents/${selectedTask.document_id}/rendered-page/${selectedTask.page_number || 1}`}
+                        alt={`Page ${selectedTask.page_number || 1}`}
+                        className="max-h-[400px] w-auto object-contain select-none pointer-events-none"
+                      />
+                      <svg
+                        className="absolute inset-0 w-full h-full pointer-events-none"
+                        viewBox="0 0 1000 1000"
+                        preserveAspectRatio="none"
+                      >
+                        {selectedTask.quads && selectedTask.quads.length >= 4 ? (
+                          <polygon
+                            points={selectedTask.quads.map((pt: [number, number]) => `${pt[0]},${pt[1]}`).join(' ')}
+                            fill="rgba(56, 189, 248, 0.35)"
+                            stroke="#38BDF8"
+                            strokeWidth={3}
+                          />
+                        ) : selectedTask.bbox ? (
+                          <rect
+                            x={selectedTask.bbox[0]}
+                            y={selectedTask.bbox[1]}
+                            width={Math.max(12, selectedTask.bbox[2] - selectedTask.bbox[0])}
+                            height={Math.max(12, selectedTask.bbox[3] - selectedTask.bbox[1])}
+                            fill="rgba(56, 189, 248, 0.35)"
+                            stroke="#38BDF8"
+                            strokeWidth={3}
+                          />
+                        ) : null}
+                      </svg>
+                    </div>
+                  )}
+                  <div className="text-[11px] font-mono text-slate-400 mt-2 flex items-center justify-between w-full px-2">
+                    <span>Document: {selectedTask.document_filename}</span>
+                    <span>Page {selectedTask.page_number || 1}</span>
                   </div>
-                  <div className="p-3 rounded-lg bg-[#07090E] border border-white/[0.08] text-xs font-mono text-slate-200">
+                </div>
+
+                {/* Evidence Context Text Callout */}
+                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-1.5">
+                  <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Evidence Context Snippet:</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-[#07090E] border border-white/[0.08] text-xs font-mono text-slate-200">
                     &quot;{selectedTask.evidence_text || 'No spatial snippet attached'}&quot;
                   </div>
+                </div>
+
+                {/* Explainable Confidence Contributing Signals */}
+                {selectedTask.confidence_signals && Object.keys(selectedTask.confidence_signals).length > 0 && (
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-1.5">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-semibold block">
+                      Explainable Confidence Signals:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 text-[11px] font-mono">
+                      {Object.entries(selectedTask.confidence_signals).map(([sig, val]) => (
+                        <span key={sig} className="px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08] text-sky-300">
+                          {sig}: <strong className="text-white">{String(val)}</strong>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Keyboard Shortcuts Hint */}
+                <div className="flex items-center gap-3 text-[10px] font-mono text-slate-500 border-t border-white/[0.06] pt-3">
+                  <span className="font-semibold text-slate-400">SHORTCUTS:</span>
+                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300">j</kbd>/<kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300">k</kbd> next/prev</span>
+                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300">Enter</kbd> accept</span>
+                  <span><kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300">e</kbd> edit</span>
                 </div>
 
                 {/* Adjudication Form */}
@@ -267,6 +394,7 @@ export default function HumanReviewPage() {
                       Corrected Value
                     </label>
                     <Input
+                      ref={inputRef}
                       type="text"
                       value={correctionValue}
                       onChange={(e) => setCorrectionValue(e.target.value)}

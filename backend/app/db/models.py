@@ -156,6 +156,8 @@ class ExtractedField(Base):
     confidence_score = Column(Float, default=1.0)  # 0.0 - 1.0 composite
     is_critical = Column(Boolean, default=False)
     needs_review = Column(Boolean, default=False)
+    evidence_located = Column(Boolean, default=True)
+    confidence_signals = Column(JSON, default=dict)
     
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -179,6 +181,8 @@ class FieldEvidence(Base):
     
     extraction_method = Column(String(60), nullable=False)
     char_confidence = Column(Float, default=1.0)
+    is_located = Column(Boolean, default=True)
+    quads = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     field = relationship("ExtractedField", back_populates="evidence")

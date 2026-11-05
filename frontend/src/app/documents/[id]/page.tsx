@@ -16,7 +16,8 @@ import {
   ZoomOut,
   Target,
   Sparkles,
-  ShieldAlert
+  ShieldAlert,
+  AlertCircle
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -123,6 +124,12 @@ export default function DocumentDetailPage() {
               >
                 {doc.status}
               </Badge>
+              {doc.latest_extraction?.is_mock && (
+                <Badge variant="warning" className="border-amber-500/30 bg-amber-500/10 text-amber-300 font-mono text-[10px]">
+                  <AlertTriangle className="w-3 h-3 text-amber-400 mr-1 inline" />
+                  MOCK ENGINE
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-slate-400 mt-1 font-mono">
               SHA: <span className="text-slate-300">{doc.checksum?.substring(0, 16)}...</span> · {doc.page_count} page(s) · Grade: <span className="text-sky-400">{doc.quality_category}</span>
@@ -239,10 +246,26 @@ export default function DocumentDetailPage() {
                   preserveAspectRatio="none"
                 >
                   {pageEvidence.map((ev: any) => {
+                    const isHigh = ev.isHighlighted;
+                    if (ev.quads && Array.isArray(ev.quads) && ev.quads.length >= 4) {
+                      const pointsStr = ev.quads.map((pt: any) => `${pt[0]},${pt[1]}`).join(' ');
+                      return (
+                        <g key={ev.fieldName}>
+                          <polygon
+                            points={pointsStr}
+                            fill={isHigh ? 'rgba(56, 189, 248, 0.35)' : 'rgba(16, 185, 129, 0.18)'}
+                            stroke={isHigh ? '#38BDF8' : '#10B981'}
+                            strokeWidth={isHigh ? 3 : 1.5}
+                            className="cursor-pointer transition-all hover:fill-sky-400/40"
+                            onClick={() => setHighlightedField(ev.fieldName)}
+                          />
+                        </g>
+                      );
+                    }
+                    if (!ev.bbox) return null;
                     const [x0, y0, x1, y1] = ev.bbox;
                     const w = Math.max(10, x1 - x0);
                     const h = Math.max(10, y1 - y0);
-                    const isHigh = ev.isHighlighted;
 
                     return (
                       <g key={ev.fieldName}>
@@ -358,9 +381,23 @@ export default function DocumentDetailPage() {
                         <div className="text-sm font-semibold text-white font-mono truncate">
                           {f.raw_value ? f.raw_value : <span className="text-slate-500 italic font-normal">[Missing]</span>}
                         </div>
-                        {f.evidence && (
+                        {f.evidence_located === false ? (
+                          <div className="flex items-center gap-1.5 text-[10px] text-amber-400 font-mono mt-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                            <AlertCircle className="w-3 h-3 text-amber-400 shrink-0" />
+                            <span>No source span located in document text layer</span>
+                          </div>
+                        ) : f.evidence ? (
                           <div className="text-[10px] text-slate-400 font-mono mt-1 truncate">
                             p.{f.evidence.page_number}: &quot;{f.evidence.evidence_text}&quot;
+                          </div>
+                        ) : null}
+                        {f.confidence_signals && Object.keys(f.confidence_signals).length > 0 && (
+                          <div className="text-[10px] text-slate-500 font-mono mt-1 flex flex-wrap gap-1">
+                            {Object.entries(f.confidence_signals).map(([k, v]) => (
+                              <span key={k} className="px-1 py-0.2 rounded bg-white/[0.04] text-slate-400">
+                                {k}: <strong className="text-slate-300">{String(v)}</strong>
+                              </span>
+                            ))}
                           </div>
                         )}
                       </div>
