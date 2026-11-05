@@ -8,12 +8,12 @@ import {
   Users, 
   Cpu, 
   FileText,
-  Sliders,
-  DollarSign,
-  ArrowUpRight,
   Sparkles
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { StatCard } from '@/components/ui/stat-card';
 
 export default function CostAnalysisPage() {
   const [costData, setCostData] = useState<any>(null);
@@ -40,121 +40,87 @@ export default function CostAnalysisPage() {
   }, [volume, reviewRate]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-mono tracking-widest uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[11px] font-mono tracking-wider uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
               Unit Economics & TCO Ledger
             </span>
-            <span className="text-textMuted text-xs">·</span>
-            <span className="text-xs text-textSecondary font-mono">
+            <span className="text-slate-600 text-xs">·</span>
+            <span className="text-xs text-slate-400 font-mono">
               Central Metric: $/Correct Field
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             Financial Operations & Cost Telemetry
           </h1>
-          <p className="text-xs text-textSecondary mt-1 max-w-2xl">
+          <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
             Granular visibility uniting machine token consumption, local CPU OCR compute, and fully loaded human review labor.
           </p>
         </div>
       </div>
 
-      {/* High-Level Expenditure Floating Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Direct Machine Spend */}
-        <div className="glass-card p-5 rounded-xl border border-white/[0.08] relative overflow-hidden group">
-          <div className="flex items-center justify-between text-textSecondary text-xs font-medium">
-            <span>Direct Machine Spend</span>
-            <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
-              <Cpu className="w-4 h-4 text-cyan-400" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-white mt-3 font-mono tracking-tight">
-            ${costData ? costData.total_machine_cost_usd.toFixed(4) : '0.0000'}
-          </div>
-          <div className="text-[11px] text-textMuted mt-2 font-mono">
-            Zero token waste · Native + Local OCR
-          </div>
-        </div>
+      {/* High-Level Expenditure Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Direct Machine Spend"
+          value={`$${costData ? costData.total_machine_cost_usd.toFixed(4) : '0.0000'}`}
+          icon={<Cpu className="w-4 h-4 text-sky-400" />}
+          subtitle={<span className="font-mono text-slate-400">Zero Token Waste · Native + Local</span>}
+        />
 
-        {/* Human Review Labor */}
-        <div className="glass-card p-5 rounded-xl border border-white/[0.08] relative overflow-hidden group">
-          <div className="flex items-center justify-between text-textSecondary text-xs font-medium">
-            <span>Human Review Labor</span>
-            <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <Users className="w-4 h-4 text-amber-400" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-amber-400 mt-3 font-mono tracking-tight">
-            ${costData ? costData.total_human_review_cost_usd.toFixed(2) : '0.00'}
-          </div>
-          <div className="text-[11px] text-textMuted mt-2 font-mono">
-            {costData ? costData.total_human_review_hours : 0} hrs @ ${costData ? costData.hourly_reviewer_rate : 35}/hr
-          </div>
-        </div>
+        <StatCard
+          title="Human Review Labor"
+          value={`$${costData ? costData.total_human_review_cost_usd.toFixed(2) : '0.00'}`}
+          icon={<Users className="w-4 h-4 text-amber-400" />}
+          subtitle={<span className="font-mono text-slate-400">{costData ? costData.total_human_review_hours : 0} hrs @ ${costData ? costData.hourly_reviewer_rate : 35}/hr</span>}
+        />
 
-        {/* Fully Loaded Spend */}
-        <div className="glass-card p-5 rounded-xl border border-white/[0.08] relative overflow-hidden group">
-          <div className="flex items-center justify-between text-textSecondary text-xs font-medium">
-            <span>Total Loaded Spend (TCO)</span>
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <CircleDollarSign className="w-4 h-4 text-emerald-400" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-white mt-3 font-mono tracking-tight">
-            ${costData ? costData.total_fully_loaded_cost_usd.toFixed(2) : '0.00'}
-          </div>
-          <div className="text-[11px] text-textMuted mt-2 font-mono">
-            Direct Machine + Operator labor
-          </div>
-        </div>
+        <StatCard
+          title="Total Loaded Spend (TCO)"
+          value={`$${costData ? costData.total_fully_loaded_cost_usd.toFixed(2) : '0.00'}`}
+          icon={<CircleDollarSign className="w-4 h-4 text-emerald-400" />}
+          subtitle={<span className="font-mono text-slate-400">Direct Machine + Operator Labor</span>}
+        />
 
-        {/* Operations Volume */}
-        <div className="glass-card p-5 rounded-xl border border-white/[0.08] relative overflow-hidden group">
-          <div className="flex items-center justify-between text-textSecondary text-xs font-medium">
-            <span>Extraction Operations</span>
-            <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <FileText className="w-4 h-4 text-blue-400" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-white mt-3 font-mono tracking-tight">
-            {costData ? costData.total_extraction_runs : 0}
-          </div>
-          <div className="text-[11px] text-textMuted mt-2 font-mono">
-            Extraction runs logged to ledger
-          </div>
-        </div>
+        <StatCard
+          title="Extraction Operations"
+          value={costData ? costData.total_extraction_runs : 0}
+          icon={<FileText className="w-4 h-4 text-sky-400" />}
+          subtitle={<span className="font-mono text-slate-400">Ledger Invocations</span>}
+        />
       </div>
 
       {/* Financial Simulator & Unit Economics Projections */}
-      <div className="p-6 rounded-2xl glass-panel border border-white/[0.08] space-y-6 shadow-float">
+      <Card className="p-6 space-y-6">
         <div className="flex items-center justify-between border-b border-white/[0.07] pb-4">
           <div className="flex items-center gap-2.5">
-            <Calculator className="w-5 h-5 text-cyan-400" />
+            <div className="p-2 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400">
+              <Calculator className="w-4 h-4" />
+            </div>
             <div>
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+              <h2 className="text-sm font-semibold text-white tracking-tight">
                 Production Unit Economics Simulator
               </h2>
-              <p className="text-xs text-textMuted mt-0.5">
+              <p className="text-xs text-slate-400 mt-0.5">
                 Simulate monthly enterprise claims operational costs comparing pure LLM vs our Adaptive Hybrid Architecture.
               </p>
             </div>
           </div>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-mono">
+          <Badge variant="info">
             Interactive Model
-          </span>
+          </Badge>
         </div>
 
         {/* Sliders Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
           {/* Slider 1: Monthly Document Volume */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-textSecondary">Monthly Claims:</span>
-              <span className="text-cyan-300 font-bold">{volume.toLocaleString()}</span>
+              <span className="text-slate-400">Monthly Claims:</span>
+              <span className="text-sky-300 font-semibold tabular-nums">{volume.toLocaleString()}</span>
             </div>
             <input
               type="range"
@@ -163,9 +129,9 @@ export default function CostAnalysisPage() {
               step="1000"
               value={volume}
               onChange={(e) => setVolume(Number(e.target.value))}
-              className="w-full accent-cyan-400 cursor-pointer"
+              className="w-full accent-sky-400 cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-textMuted font-mono">
+            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
               <span>1k</span>
               <span>100k</span>
             </div>
@@ -174,8 +140,8 @@ export default function CostAnalysisPage() {
           {/* Slider 2: Human Escalation Rate */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-textSecondary">Review Escalation:</span>
-              <span className="text-amber-300 font-bold">{Math.round(reviewRate * 100)}%</span>
+              <span className="text-slate-400">Review Escalation:</span>
+              <span className="text-amber-300 font-semibold tabular-nums">{Math.round(reviewRate * 100)}%</span>
             </div>
             <input
               type="range"
@@ -186,7 +152,7 @@ export default function CostAnalysisPage() {
               onChange={(e) => setReviewRate(Number(e.target.value))}
               className="w-full accent-amber-400 cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-textMuted font-mono">
+            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
               <span>2%</span>
               <span>40%</span>
             </div>
@@ -195,8 +161,8 @@ export default function CostAnalysisPage() {
           {/* Slider 3: Minutes Per Review */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-textSecondary">Review Minutes/Doc:</span>
-              <span className="text-slate-300 font-bold">{minutesPerReview} min</span>
+              <span className="text-slate-400">Review Minutes/Doc:</span>
+              <span className="text-slate-200 font-semibold tabular-nums">{minutesPerReview} min</span>
             </div>
             <input
               type="range"
@@ -205,9 +171,9 @@ export default function CostAnalysisPage() {
               step="0.5"
               value={minutesPerReview}
               onChange={(e) => setMinutesPerReview(Number(e.target.value))}
-              className="w-full accent-blue-400 cursor-pointer"
+              className="w-full accent-sky-400 cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-textMuted font-mono">
+            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
               <span>1 min</span>
               <span>6 min</span>
             </div>
@@ -216,8 +182,8 @@ export default function CostAnalysisPage() {
           {/* Slider 4: Hourly Rate */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-textSecondary">Reviewer Hourly:</span>
-              <span className="text-emerald-300 font-bold">${hourlyRate}/hr</span>
+              <span className="text-slate-400">Reviewer Hourly:</span>
+              <span className="text-emerald-300 font-semibold tabular-nums">${hourlyRate}/hr</span>
             </div>
             <input
               type="range"
@@ -228,7 +194,7 @@ export default function CostAnalysisPage() {
               onChange={(e) => setHourlyRate(Number(e.target.value))}
               className="w-full accent-emerald-400 cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-textMuted font-mono">
+            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
               <span>$20</span>
               <span>$65</span>
             </div>
@@ -242,53 +208,53 @@ export default function CostAnalysisPage() {
             <div className="p-5 rounded-xl border border-white/[0.08] bg-white/[0.02]">
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/[0.06]">
                 <span className="text-xs font-mono uppercase text-slate-400">Baseline Pure LLM Pipeline</span>
-                <span className="text-xs font-mono text-red-400">Unoptimized</span>
+                <Badge variant="danger">Unoptimized</Badge>
               </div>
               <div className="space-y-2 text-xs font-mono">
-                <div className="flex justify-between text-textMuted">
+                <div className="flex justify-between text-slate-400">
                   <span>Machine API Token Spend:</span>
-                  <span className="text-white">${projections.baseline_pure_llm?.machine_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="text-white tabular-nums">${projections.baseline_pure_llm?.machine_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
-                <div className="flex justify-between text-textMuted">
+                <div className="flex justify-between text-slate-400">
                   <span>Human Verification Labor:</span>
-                  <span className="text-white">${projections.baseline_pure_llm?.human_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="text-white tabular-nums">${projections.baseline_pure_llm?.human_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-white/[0.06] text-sm font-bold text-white">
                   <span>Total Monthly TCO:</span>
-                  <span className="text-red-400">${projections.baseline_pure_llm?.total_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="text-rose-400 tabular-nums">${projections.baseline_pure_llm?.total_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
               </div>
             </div>
 
             {/* Our Hybrid Architecture */}
-            <div className="p-5 rounded-xl border border-cyan-500/30 bg-gradient-to-br from-cyan-950/20 to-blue-950/20 shadow-glow-cyan">
+            <div className="p-5 rounded-xl border border-sky-500/25 bg-sky-500/[0.04]">
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/[0.06]">
-                <span className="text-xs font-mono uppercase text-cyan-300 font-semibold flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-xs font-mono uppercase text-sky-300 font-semibold flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-sky-400" />
                   <span>Adaptive Hybrid Router</span>
                 </span>
-                <span className="text-xs font-mono text-emerald-400 font-bold">
+                <Badge variant="success">
                   {projections.savings_percentage ? `${projections.savings_percentage.toFixed(1)}% Cost Reduction` : 'Optimal'}
-                </span>
+                </Badge>
               </div>
               <div className="space-y-2 text-xs font-mono">
-                <div className="flex justify-between text-textMuted">
+                <div className="flex justify-between text-slate-400">
                   <span>Machine Inference Spend:</span>
-                  <span className="text-cyan-300 font-semibold">${projections.hybrid_router?.machine_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="text-sky-300 font-semibold tabular-nums">${projections.hybrid_router?.machine_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
-                <div className="flex justify-between text-textMuted">
+                <div className="flex justify-between text-slate-400">
                   <span>Human Verification Labor:</span>
-                  <span className="text-slate-300">${projections.hybrid_router?.human_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="text-slate-200 tabular-nums">${projections.hybrid_router?.human_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-white/[0.06] text-sm font-bold text-white">
                   <span>Total Monthly TCO:</span>
-                  <span className="text-emerald-400">${projections.hybrid_router?.total_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="text-emerald-400 tabular-nums">${projections.hybrid_router?.total_cost?.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
               </div>
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
