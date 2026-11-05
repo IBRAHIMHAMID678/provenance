@@ -355,6 +355,7 @@ class EvaluationResult(Base):
     recall = Column(Float, default=0.0)
     f1_score = Column(Float, default=0.0)
     hallucination_rate = Column(Float, default=0.0)
+    mismatch_rate = Column(Float, default=0.0)
     human_review_rate = Column(Float, default=0.0)
     first_pass_acceptance_rate = Column(Float, default=0.0)
     
@@ -364,6 +365,7 @@ class EvaluationResult(Base):
     p95_latency_ms = Column(Float, default=0.0)
     
     # Cost & Efficiency
+    cost_basis = Column(String(30), default="modeled")  # "measured" or "modeled"
     cost_per_document = Column(Float, default=0.0)
     cost_per_correct_field = Column(Float, default=0.0)
     total_machine_cost = Column(Float, default=0.0)
