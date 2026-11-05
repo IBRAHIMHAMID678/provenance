@@ -125,3 +125,4 @@ def test_prompt_injection_delimiter_defense():
     assert isinstance(res, dict)
     # The mock extractor should not be tricked into extracting the injection as claim_id
     assert res.get("claim_id") != "HACKED"
+

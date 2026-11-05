@@ -48,3 +48,4 @@ def test_render_multipage_and_degraded_scan(tmp_path):
     images = page0.get_images()
     assert len(images) >= 1, "Degraded scan must contain rasterized image"
     doc_s.close()
+
