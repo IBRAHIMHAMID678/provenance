@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  ShieldCheck, 
-  ShieldAlert, 
-  Play, 
-  Terminal, 
+import {
+  ShieldCheck,
+  ShieldAlert,
+  Play,
+  Terminal,
   CheckCircle2
 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -79,17 +79,15 @@ export default function SecurityPage() {
       </div>
 
       {/* Security Status Banner */}
-      <div className={`p-5 rounded-xl border backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 ${
-        allPassed 
-          ? 'bg-emerald-950/20 border-emerald-500/30' 
-          : 'bg-[#0D111A]/90 border-white/[0.08]'
-      }`}>
+      <div className={`p-5 rounded-xl border backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 ${allPassed
+        ? 'bg-emerald-950/20 border-emerald-500/30'
+        : 'bg-[#0D111A]/90 border-white/[0.08]'
+        }`}>
         <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-xl border ${
-            allPassed 
-              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-              : 'bg-white/[0.04] border-white/[0.08] text-slate-400'
-          }`}>
+          <div className={`p-3 rounded-xl border ${allPassed
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+            : 'bg-white/[0.04] border-white/[0.08] text-slate-400'
+            }`}>
             {allPassed ? (
               <ShieldCheck className="w-6 h-6" />
             ) : (

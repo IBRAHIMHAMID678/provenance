@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Settings, 
-  Save, 
-  HardDrive, 
-  Cpu, 
-  ShieldCheck, 
-  CheckCircle2, 
-  Sliders, 
-  Activity 
+import {
+  Settings,
+  Save,
+  HardDrive,
+  Cpu,
+  ShieldCheck,
+  CheckCircle2,
+  Sliders,
+  Activity
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -219,7 +219,7 @@ export default function SettingsPage() {
                   {totalGb} GB
                 </span>
               </div>
-              
+
               {/* Storage visual gauge */}
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center justify-between text-[10px] text-slate-400">
@@ -227,7 +227,7 @@ export default function SettingsPage() {
                   <span className="tabular-nums">{usedPercent}% used</span>
                 </div>
                 <div className="w-full bg-white/[0.06] rounded-full h-1.5 overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-sky-400 rounded-full"
                     style={{ width: `${usedPercent}%` }}
                   />
