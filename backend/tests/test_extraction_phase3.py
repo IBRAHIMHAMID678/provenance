@@ -65,3 +65,4 @@ def test_model_metadata_and_pricing():
     assert model == "mock-regex-extractor"
     assert pt > 0
     assert ct > 0
+

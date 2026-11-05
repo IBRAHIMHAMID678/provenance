@@ -41,13 +41,21 @@
 ### 2.3 Tesseract OCR Binary Status
 - **Host Audit Finding:** 
   - Python wrapper `pytesseract` is installed in the Python environment.
-  - Tesseract binary (`tesseract.exe`) is absent from `C:\Program Files\Tesseract-OCR\` and host system `PATH`.
+  - Tesseract binary (`tesseract.exe`) is absent from `C:\Program Files\Tesseract-OCR\` and host Windows `PATH`.
   - Non-elevated command execution via `winget` downloaded the UB-Mannheim installer (`tesseract-ocr-w64-setup-5.4.0.20240606.exe`), but automated machine-level installation halted due to interactive Windows UAC elevation requirements.
 - **Compliance Action:**
   - In strict compliance with our anti-fabrication mandate:
     1. Tesseract is reported accurately as **OFFLINE**: `"Tesseract binary unavailable: tesseract is not installed or it's not in your PATH"`.
     2. Zero mocked or fake Tesseract outputs are generated.
     3. The rest of the application remains 100% functional, routing all OCR tasks to the verified Deep Learning engine (PaddleOCR/RapidOCR).
+- **Phase 7 Containerization Support:**
+  - In Phase 7, `backend/Dockerfile` installs Debian package `tesseract-ocr` and `tesseract_ocr.py` resolves the binary via `shutil.which('tesseract')`, enabling automated Tesseract support in Linux/Docker deployments while honestly reporting host status on Windows.
+
+### 2.4 Phase 1 Spatial Polygon Quad Preservation
+In Phase 1 hardening:
+- RapidOCR polygon coordinates are threaded through without loss, populating `quads` in `FieldEvidence`.
+- Native PyMuPDF extraction uses `page.search_for(val, quads=True)` to extract true 4-point polygon quads `[[x0, y0], [x1, y1], [x2, y2], [x3, y3]]` on the target page.
+- Fields with unlocated evidence are marked `evidence_located=False` and automatically escalate to the Human Review Station.
 
 ---
 

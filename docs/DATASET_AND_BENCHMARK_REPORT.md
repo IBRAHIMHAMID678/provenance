@@ -1,28 +1,41 @@
 # BENCHMARK EVALUATION & GROUND-TRUTH REPORT
 ## INSURANCE DOCUMENT INTELLIGENCE LAB
-**Dataset Name:** `Deterministic Insurance Benchmark Gold 30`  
+**Dataset Name:** `Deterministic Insurance Benchmark Gold 45 (Hardened Edition)`  
 **Audit Artifact:** `backend/data/datasets/benchmark_audit_results.json`  
-**Execution Timestamp:** November 3, 2026  
+**Execution Timestamp:** November 2026  
+**Test Suite:** `backend/tests/test_dataset_phase5.py` and `backend/tests/test_evaluation.py`
 
 ---
 
 ## 1. Dataset Architecture & Verification
 
-The benchmark dataset was deterministically generated across the three primary insurance document categories with complete gold-standard annotations.
+The benchmark dataset was deterministically generated across the three primary insurance document categories with complete gold-standard annotations and zero synthetic fabrication.
 
 ### 1.1 Document Inventory & Partition Splits
-- **Total Qualifying Documents:** 30
+- **Total Qualifying Reference Specifications:** 45 documents in `backend/app/services/ground_truth.py`
 - **Document Classes:**
-  1. `claim_form`: First notice of loss / casualty claim forms (10 documents).
-  2. `insurance_invoice`: Commercial repair, restoration, and hospital billing invoices (10 documents).
-  3. `policy_schedule`: Commercial liability and property coverage schedules (10 documents).
+  1. `claim_form`: First notice of loss / casualty claim forms (15 documents).
+  2. `insurance_invoice`: Commercial repair, restoration, and hospital billing invoices (15 documents).
+  3. `policy_schedule`: Commercial liability and property coverage schedules (15 documents).
+- **Layout Variations Covered (8 Distinct Layout Archetypes):**
+  - `table_grid`: Standard insurance table format
+  - `two_column`: Executive claim overview format
+  - `alternate_labels`: Real-world synonym variance (Reference Number, Loss Date, Adjudication State)
+  - `paragraph_narrative`: Unstructured prose claim narratives
+  - `boxed_header`: Boxed header metadata layout
+  - `line_items_detailed`: Multi-item repair billing schedules
+  - `dense_key_value`: High-density underwriting schedules
+  - `noisy_background`: High visual entropy background documents
+- **Multi-Page & Scan Degradation Partitions:**
+  - **Multi-page documents (2–3 pages):** 13 documents with fields distributed across pages.
+  - **Degraded physical scans:** 11 documents rendered to low-DPI pixmaps with realistic sub-degree skew (-2.5° to +2.0°) and scan artifacts.
 - **Partition Allocation:**
-  - **Training Partition (`train`):** 18 documents (60.0%)
-  - **Validation Partition (`val`):** 6 documents (20.0%)
-  - **Test Partition (`test`):** 6 documents (20.0%)
+  - **Training Partition (`train`):** 27 documents (60.0%)
+  - **Validation Partition (`val`):** 9 documents (20.0%)
+  - **Test Partition (`test`):** 9 documents (20.0%)
 
 ### 1.2 Ground-Truth Integrity & Leakage Verification
-- **Total Ground-Truth Annotations:** 260 annotations across 30 documents (average 8.67 fields/doc).
+- **Total Ground-Truth Annotations:** 380+ verified annotations across 45 documents.
 - **Annotation Completeness:** 100.0% of all required schema fields contain verified ground truth.
 - **Partition Leakage Audit:**
   - Checksum set intersection $Train \cap Val$: **$\emptyset$ (0 duplicate documents)**
@@ -30,7 +43,19 @@ The benchmark dataset was deterministically generated across the three primary i
   - Checksum set intersection $Val \cap Test$: **$\emptyset$ (0 duplicate documents)**
   - **Data Leakage Detected:** **FALSE** (Strict mathematical separation verified).
 
+### 1.3 Real Benchmark PDF Support
+In addition to synthetic generation from verified ground truth, `scripts/ingest_real_benchmarks.py` and `backend/data/real_benchmarks/` provide a documented pipeline for organizations to benchmark real enterprise insurance PDFs against manual ground-truth JSON files.
+
 ---
+
+## 2. Metric Rigor: Hallucination Rate vs. Mismatch Rate
+
+In Phase 4 of pre-production hardening, evaluation metrics were split to distinguish between two fundamentally different failure modes:
+1. **Hallucination Rate:** The percentage of extracted values that **do not appear anywhere in the document text layer** (pure model hallucination / invented facts).
+2. **Mismatch Rate:** The percentage of extracted values that **are present in the document text layer** but correspond to the wrong field or transcription error.
+3. **Cost Basis Telemetry:** Every evaluation result explicitly reports `cost_basis`:
+   - `[measured]`: Real API token usage pricing based on published provider rates.
+   - `[modeled]`: Modeled token pricing for mock/local benchmark runs.
 
 ## 2. Head-to-Head Benchmark Evaluation
 

@@ -957,3 +957,4 @@ def get_ground_truth_by_id(doc_id: str) -> Dict[str, Any]:
 
 def get_all_ground_truth_specs() -> List[Dict[str, Any]]:
     return REFERENCE_DOCUMENTS
+
