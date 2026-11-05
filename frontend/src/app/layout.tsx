@@ -3,8 +3,8 @@ import './globals.css';
 import { Sidebar } from '@/components/Sidebar';
 
 export const metadata: Metadata = {
-  title: 'Insurance Document Intelligence Lab',
-  description: 'Extract less blindly. Verify more intelligently. Spatial high-precision document extraction & evaluation workbench.',
+  title: 'Provenance — Insurance Document Intelligence & Ground Truth Lab',
+  description: 'High-precision document extraction, evidence spatial localization, cost-per-correct-field telemetry, and ground-truth benchmark workbench.',
 };
 
 export default function RootLayout({
@@ -14,12 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-canvas text-textPrimary min-h-screen selection:bg-cyan-500/30 selection:text-cyan-200">
+      <body className="bg-[#080B11] text-slate-100 min-h-screen selection:bg-sky-500/30 selection:text-sky-200">
         <Sidebar />
         <main className="pl-64 min-h-screen relative overflow-x-hidden">
-          {/* Subtle atmospheric ambient glow */}
-          <div className="fixed top-0 left-64 right-0 h-72 bg-gradient-to-b from-cyan-950/20 via-transparent to-transparent pointer-events-none z-0"></div>
-          
           <div className="relative z-10 max-w-7xl mx-auto p-8 space-y-8">
             {children}
           </div>

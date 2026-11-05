@@ -10,19 +10,18 @@ import {
   Play, 
   CheckCircle2, 
   AlertTriangle, 
-  XCircle, 
   ChevronLeft, 
   ChevronRight,
   ZoomIn,
   ZoomOut,
-  Layers,
-  ShieldAlert,
-  UserCheck,
-  Cpu,
   Target,
-  Sparkles
+  Sparkles,
+  ShieldAlert
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export default function DocumentDetailPage() {
   const params = useParams();
@@ -70,8 +69,8 @@ export default function DocumentDetailPage() {
 
   if (loading) {
     return (
-      <div className="py-24 text-center text-textMuted text-xs flex flex-col items-center justify-center gap-3">
-        <div className="w-8 h-8 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin"></div>
+      <div className="py-24 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-3">
+        <div className="w-8 h-8 rounded-full border-2 border-sky-400 border-t-transparent animate-spin" />
         <p className="font-mono">Loading spatial document stage & evidence telemetry...</p>
       </div>
     );
@@ -79,8 +78,8 @@ export default function DocumentDetailPage() {
 
   if (!doc) {
     return (
-      <div className="py-24 text-center text-textMuted text-xs">
-        Document not found. <Link href="/documents" className="text-cyan-400 underline">Back to Ingestion Library</Link>
+      <div className="py-24 text-center text-slate-400 text-xs">
+        Document not found. <Link href="/documents" className="text-sky-400 underline">Back to Ingestion Library</Link>
       </div>
     );
   }
@@ -101,63 +100,68 @@ export default function DocumentDetailPage() {
       {/* Top Header Breadcrumb & Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
         <div className="flex items-center gap-3">
-          <Link
-            href="/documents"
-            className="p-2 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-textSecondary hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
+          <Link href="/documents">
+            <Button variant="secondary" size="icon-md" title="Back to Documents">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
           </Link>
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-lg font-bold text-white tracking-tight font-mono">{doc.original_filename}</h1>
-              <span className="px-2 py-0.5 rounded-md bg-white/[0.05] text-[11px] font-mono text-cyan-300 border border-white/[0.08]">
-                {doc.document_type}
-              </span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-medium ${
-                doc.status === 'completed'
-                  ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                  : doc.status === 'review_required'
-                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                  : 'bg-red-500/15 text-red-300 border border-red-500/30'
-              }`}>
+              <Badge variant="neutral">
+                {doc.document_type || 'Unknown'}
+              </Badge>
+              <Badge
+                dot
+                variant={
+                  doc.status === 'completed'
+                    ? 'success'
+                    : doc.status === 'review_required'
+                    ? 'warning'
+                    : 'danger'
+                }
+              >
                 {doc.status}
-              </span>
+              </Badge>
             </div>
-            <p className="text-xs text-textMuted mt-1 font-mono">
-              SHA: <span className="text-slate-300">{doc.checksum?.substring(0, 16)}...</span> · {doc.page_count} page(s) · Grade: <span className="text-cyan-400">{doc.quality_category}</span>
+            <p className="text-xs text-slate-400 mt-1 font-mono">
+              SHA: <span className="text-slate-300">{doc.checksum?.substring(0, 16)}...</span> · {doc.page_count} page(s) · Grade: <span className="text-sky-400">{doc.quality_category}</span>
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2.5">
-          <button
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => handleRerunExtraction('hybrid')}
-            disabled={reextracting}
-            className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-cyan-500/20 text-xs font-medium text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            loading={reextracting}
           >
-            <Play className={`w-3.5 h-3.5 ${reextracting ? 'animate-spin' : ''}`} />
-            <span>{reextracting ? 'Extracting...' : 'Re-run Hybrid Router'}</span>
-          </button>
+            <Play className="w-3.5 h-3.5" />
+            <span>Re-run Hybrid Router</span>
+          </Button>
           
           <a
             href={`http://localhost:8000/api/export/document/${doc.id}/json`}
             target="_blank"
             rel="noreferrer"
-            className="px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-textSecondary hover:text-white flex items-center gap-1.5 transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Export JSON</span>
+            <Button variant="secondary" size="sm">
+              <Download className="w-3.5 h-3.5 text-sky-400" />
+              <span>Export JSON</span>
+            </Button>
           </a>
 
           <a
             href={`http://localhost:8000/api/export/document/${doc.id}/csv`}
             target="_blank"
             rel="noreferrer"
-            className="px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-textSecondary hover:text-white flex items-center gap-1.5 transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Export CSV</span>
+            <Button variant="secondary" size="sm">
+              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Export CSV</span>
+            </Button>
           </a>
         </div>
       </div>
@@ -167,51 +171,55 @@ export default function DocumentDetailPage() {
         {/* Left Pane: Spatial Document Stage with SVG Evidence Reticle (7 cols) */}
         <div className="col-span-12 lg:col-span-7 space-y-3">
           {/* Viewer HUD Bar */}
-          <div className="p-3 rounded-xl glass-panel border border-white/[0.08] flex items-center justify-between text-xs">
+          <Card className="p-2.5 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setSelectedPage(Math.max(1, selectedPage - 1))}
                 disabled={selectedPage <= 1}
-                className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/[0.08] text-slate-300 disabled:opacity-30 transition-colors"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              <span className="font-mono text-textSecondary text-[11px]">
-                Page <span className="text-white font-semibold">{selectedPage}</span> of {doc.page_count}
+              </Button>
+              <span className="font-mono text-slate-400 text-[11px]">
+                Page <span className="text-white font-semibold tabular-nums">{selectedPage}</span> of {doc.page_count || 1}
               </span>
-              <button
-                onClick={() => setSelectedPage(Math.min(doc.page_count, selectedPage + 1))}
-                disabled={selectedPage >= doc.page_count}
-                className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/[0.08] text-slate-300 disabled:opacity-30 transition-colors"
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setSelectedPage(Math.min(doc.page_count || 1, selectedPage + 1))}
+                disabled={selectedPage >= (doc.page_count || 1)}
               >
                 <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </div>
 
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setZoomLevel(Math.max(0.7, zoomLevel - 0.15))}
-                className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/[0.08] text-textSecondary hover:text-white transition-colors"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-              <span className="font-mono text-[11px] text-cyan-300 w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
-              <button
+              </Button>
+              <span className="font-mono text-[11px] text-sky-300 w-12 text-center tabular-nums">{Math.round(zoomLevel * 100)}%</span>
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setZoomLevel(Math.min(1.6, zoomLevel + 0.15))}
-                className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/[0.08] text-textSecondary hover:text-white transition-colors"
                 title="Zoom In"
               >
                 <ZoomIn className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
 
-          {/* Spatial Canvas Container with SVG Bounding Box Layer */}
-          <div className="rounded-xl glass-panel border border-white/[0.08] overflow-auto max-h-[750px] p-6 flex justify-center bg-[#07090E]/90 relative shadow-inner">
-            {activePageObj ? (
+          {/* Spatial Canvas Container */}
+          <div className="rounded-xl bg-[#090C13] border border-white/[0.08] overflow-auto max-h-[750px] p-6 flex justify-center shadow-inner min-h-[500px]">
+            {activePageObj && activePageObj.width ? (
               <div 
-                className="relative bg-white shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-neutral-700 rounded-sm overflow-hidden"
+                className="relative bg-white shadow-2xl border border-neutral-700 rounded-sm overflow-hidden"
                 style={{
                   width: `${activePageObj.width * zoomLevel}px`,
                   height: `${activePageObj.height * zoomLevel}px`,
@@ -243,11 +251,11 @@ export default function DocumentDetailPage() {
                           y={y0}
                           width={w}
                           height={h}
-                          fill={isHigh ? 'rgba(0, 242, 254, 0.28)' : 'rgba(16, 185, 129, 0.16)'}
-                          stroke={isHigh ? '#00F2FE' : '#10B981'}
+                          fill={isHigh ? 'rgba(56, 189, 248, 0.28)' : 'rgba(16, 185, 129, 0.16)'}
+                          stroke={isHigh ? '#38BDF8' : '#10B981'}
                           strokeWidth={isHigh ? 3 : 1.5}
                           strokeDasharray={isHigh ? 'none' : '4 2'}
-                          className="cursor-pointer transition-all hover:fill-cyan-400/40"
+                          className="cursor-pointer transition-all hover:fill-sky-400/40"
                           onClick={() => setHighlightedField(ev.fieldName)}
                         />
                       </g>
@@ -256,153 +264,153 @@ export default function DocumentDetailPage() {
                 </svg>
               </div>
             ) : (
-              <div className="py-24 text-textMuted text-xs font-mono">Page preview not available.</div>
+              /* Fallback Direct PDF Embedded Stage */
+              <div className="w-full h-[650px] flex flex-col items-center justify-center">
+                <iframe
+                  src={`http://localhost:8000/api/documents/${doc.id}/file#toolbar=0`}
+                  title="PDF Preview"
+                  className="w-full h-full rounded-lg border border-white/[0.08]"
+                />
+              </div>
             )}
           </div>
         </div>
 
-        {/* Right Pane: Fields, Validations & Trace (5 cols) */}
+        {/* Right Pane: Extracted Fields, Rules, Telemetry (5 cols) */}
         <div className="col-span-12 lg:col-span-5 space-y-4">
           {/* Tab Selector */}
-          <div className="flex border-b border-white/[0.08] gap-1">
+          <div className="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.06] rounded-lg">
             <button
               onClick={() => setActiveTab('fields')}
-              className={`py-2 px-3 text-xs font-medium border-b-2 transition-all ${
+              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 activeTab === 'fields'
-                  ? 'border-cyan-400 text-cyan-300 font-semibold'
-                  : 'border-transparent text-textSecondary hover:text-white'
+                  ? 'bg-sky-500/10 text-sky-300 border border-sky-500/25'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Extracted Fields ({doc.fields?.length || 0})
+              Fields ({doc.fields?.length || 0})
             </button>
             <button
               onClick={() => setActiveTab('validations')}
-              className={`py-2 px-3 text-xs font-medium border-b-2 transition-all ${
+              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 activeTab === 'validations'
-                  ? 'border-cyan-400 text-cyan-300 font-semibold'
-                  : 'border-transparent text-textSecondary hover:text-white'
+                  ? 'bg-sky-500/10 text-sky-300 border border-sky-500/25'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               Validations ({doc.validations?.length || 0})
             </button>
             <button
               onClick={() => setActiveTab('json')}
-              className={`py-2 px-3 text-xs font-medium border-b-2 transition-all ${
+              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 activeTab === 'json'
-                  ? 'border-cyan-400 text-cyan-300 font-semibold'
-                  : 'border-transparent text-textSecondary hover:text-white'
+                  ? 'bg-sky-500/10 text-sky-300 border border-sky-500/25'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Trace JSON
+              Telemetry JSON
             </button>
           </div>
 
-          {/* TAB 1: Fields Card List */}
+          {/* Fields Tab */}
           {activeTab === 'fields' && (
-            <div className="space-y-2.5 overflow-y-auto max-h-[720px] pr-1">
-              {(!doc.fields || doc.fields.length === 0) ? (
-                <div className="p-8 text-center text-xs text-textMuted glass-card rounded-xl border border-white/[0.08]">
-                  No fields extracted yet. Click &quot;Re-run Hybrid Router&quot; to execute.
-                </div>
-              ) : (
-                doc.fields.map((f: any) => {
-                  const isHighlighted = highlightedField === f.field_name;
-                  return (
+            <Card className="max-h-[700px] overflow-y-auto">
+              <CardHeader>
+                <CardTitle>Extracted Entities</CardTitle>
+                <span className="text-[11px] font-mono text-slate-400">
+                  {doc.fields?.filter((f: any) => f.raw_value).length || 0} extracted
+                </span>
+              </CardHeader>
+              <CardContent className="space-y-3 p-4">
+                {doc.fields?.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-6 text-center font-mono">No extracted fields recorded.</p>
+                ) : (
+                  doc.fields?.map((f: any) => {
+                    const isSelected = highlightedField === f.field_name;
+                    return (
+                      <div
+                        key={f.field_name}
+                        onClick={() => setHighlightedField(f.field_name)}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-sky-400 bg-sky-500/10'
+                            : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="font-mono text-sky-300 font-semibold text-[11px] flex items-center gap-1.5">
+                            <Target className="w-3 h-3 text-sky-400" />
+                            <span>{f.field_name}</span>
+                          </span>
+                          <Badge
+                            dot
+                            variant={
+                              f.confidence_score >= 0.90
+                                ? 'success'
+                                : f.confidence_score > 0
+                                ? 'warning'
+                                : 'neutral'
+                            }
+                          >
+                            {Math.round(f.confidence_score * 100)}%
+                          </Badge>
+                        </div>
+                        <div className="text-sm font-semibold text-white font-mono truncate">
+                          {f.raw_value ? f.raw_value : <span className="text-slate-500 italic font-normal">[Missing]</span>}
+                        </div>
+                        {f.evidence && (
+                          <div className="text-[10px] text-slate-400 font-mono mt-1 truncate">
+                            p.{f.evidence.page_number}: &quot;{f.evidence.evidence_text}&quot;
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Validations Tab */}
+          {activeTab === 'validations' && (
+            <Card className="max-h-[700px] overflow-y-auto">
+              <CardHeader>
+                <CardTitle>Cross-Field Business Rules</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 p-4">
+                {doc.validations?.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-6 text-center font-mono">No validation rules triggered.</p>
+                ) : (
+                  doc.validations?.map((v: any, idx: number) => (
                     <div
-                      key={f.id}
-                      onClick={() => {
-                        setHighlightedField(f.field_name);
-                        if (f.evidence?.page_number) setSelectedPage(f.evidence.page_number);
-                      }}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-                        isHighlighted
-                          ? 'border-cyan-400 bg-cyan-950/30 shadow-glow-cyan'
-                          : 'border-white/[0.08] glass-card hover:border-white/[0.18]'
+                      key={idx}
+                      className={`p-3 rounded-lg border ${
+                        v.passed
+                          ? 'border-emerald-500/20 bg-emerald-500/5'
+                          : 'border-amber-500/20 bg-amber-500/5'
                       }`}
                     >
-                      <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="font-mono text-cyan-300 font-medium text-[11px] flex items-center gap-1.5">
-                          <Target className="w-3 h-3 text-cyan-400" />
-                          <span>{f.field_name}</span>
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {f.is_critical && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-mono border border-red-500/30">
-                              Critical
-                            </span>
-                          )}
-                          <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
-                            f.confidence_score >= 0.90
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : f.confidence_score > 0
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                              : 'bg-white/[0.08] text-slate-400'
-                          }`}>
-                            {Math.round(f.confidence_score * 100)}% conf
-                          </span>
-                        </div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="font-mono font-semibold text-white">{v.rule_id}</span>
+                        <Badge variant={v.passed ? 'success' : 'warning'}>
+                          {v.passed ? 'PASSED' : 'FLAGGED'}
+                        </Badge>
                       </div>
-
-                      <div className="text-sm font-bold text-white font-mono tracking-tight">
-                        {f.raw_value ? f.raw_value : <span className="text-textMuted italic font-normal">[Missing]</span>}
-                      </div>
-
-                      {f.normalized_value && f.normalized_value !== f.raw_value && (
-                        <div className="text-[11px] text-textMuted font-mono mt-1">
-                          Normalized: <span className="text-slate-300">{f.normalized_value}</span>
-                        </div>
-                      )}
-
-                      {/* Evidence Context Snippet */}
-                      {f.evidence && (
-                        <div className="mt-2 pt-2 border-t border-white/[0.06] text-[11px] text-textMuted flex items-center justify-between font-mono">
-                          <span className="truncate max-w-[240px] text-slate-400">
-                            &ldquo;{f.evidence.evidence_text}&rdquo;
-                          </span>
-                          <span className="text-[10px] text-cyan-400 font-semibold">
-                            p.{f.evidence.page_number}
-                          </span>
-                        </div>
-                      )}
+                      <p className="text-xs text-slate-300">{v.explanation}</p>
                     </div>
-                  );
-                })
-              )}
-            </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
           )}
 
-          {/* TAB 2: Validations */}
-          {activeTab === 'validations' && (
-            <div className="space-y-3 overflow-y-auto max-h-[720px]">
-              {(!doc.validations || doc.validations.length === 0) ? (
-                <div className="p-8 text-center text-xs text-textMuted glass-card rounded-xl border border-white/[0.08]">
-                  Zero validation failures recorded for this document.
-                </div>
-              ) : (
-                doc.validations.map((v: any, idx: number) => (
-                  <div key={idx} className="p-3.5 rounded-xl border border-white/[0.08] glass-card">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-mono text-cyan-300 font-medium">{v.rule_id}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                        v.passed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'
-                      }`}>
-                        {v.passed ? 'PASSED' : v.severity}
-                      </span>
-                    </div>
-                    <p className="text-xs text-textSecondary mt-1">{v.explanation}</p>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* TAB 3: JSON Trace */}
+          {/* JSON Tab */}
           {activeTab === 'json' && (
-            <div className="p-4 rounded-xl glass-card border border-white/[0.08] overflow-x-auto max-h-[720px]">
-              <pre className="text-[11px] font-mono text-cyan-300/90 leading-relaxed">
+            <Card className="max-h-[700px] overflow-auto">
+              <pre className="p-4 text-[11px] font-mono text-slate-300">
                 {JSON.stringify(doc, null, 2)}
               </pre>
-            </div>
+            </Card>
           )}
         </div>
       </div>
